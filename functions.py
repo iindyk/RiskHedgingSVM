@@ -49,15 +49,16 @@ def ex4_objective(data, labels, k, h):
     cons = {'type': 'ineq', 'fun': lambda w_:
             -lsd_risk_measure(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), k)}
     res = minimize(lambda w_: np.dot(w_, w_)/2, w0,
-                   method='COBYLA', options={'maxiter': 10000},
+                   method='trust-constr', options={'maxiter': 10000},
                    constraints=cons)
     print(res.message)
     w = res.x[:m]
     b = res.x[-1]
     print('w= ', w)
     print('b= ', b)
-    print('cons= ', lsd_risk_measure(np.array([(labels[i] * (np.dot(w, data[i]) + b) - 1) for i in range(n)]), k))
+    con = lsd_risk_measure(np.array([(labels[i] * (np.dot(w, data[i]) + b) - 1) for i in range(n)]), k)
+    print('cons= ', con)
     x = np.array([labels[i] * (np.dot(w, data[i]) + b) - 1 for i in range(n)])
     q = lsd_rm_identifier(x, k)
     ret = sum([labels[i]*np.dot(h[i], w)*q[i] for i in range(n)])/n
-    return ret, res.success
+    return ret, res.success and con < 1e-5

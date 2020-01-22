@@ -3,7 +3,7 @@ from random import randint
 
 
 # returns a dataset of points from [0, 1]^m
-def get_toy_dataset(n, m, random_flips=0.1):
+def get_toy_dataset(n, m, random_flips=0.0):
     dataset = np.random.uniform(-0.5, 0.5, (n, m))
     labels = []
     for i in range(n):
