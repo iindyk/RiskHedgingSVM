@@ -12,4 +12,4 @@ def get_toy_dataset(n, m, random_flips=0.1):
     for i in range(int(random_flips*n)):
         k = randint(0, n-1)
         labels[k] *= -1
-    return dataset[:int(0.5*n), :], labels[:int(0.5*n)], dataset[int(0.5*n):, :], labels[int(0.5*n):]
+    return dataset, labels
