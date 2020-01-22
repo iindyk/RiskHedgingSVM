@@ -5,12 +5,13 @@ from scipy.optimize import minimize
 # lower semideviation
 def lsd(x, p=None):
     n = len(x)
-    if not p:
+    if p is None:
         p = np.ones(n) / n
     ex = np.dot(x, p)
     ret = 0
     for i in range(n):
         ret += (max(0, ex - x[i]) ** 2) * p[i]
+    assert ret != 0
     return np.sqrt(ret)
 
 
@@ -18,7 +19,7 @@ def lsd(x, p=None):
 def lsd_risk_measure(x, k, p=None):
     n = len(x)
     assert k > 0
-    if not p:
+    if p is None:
         p = np.ones(n) / n
     return k * lsd(x, p) - np.dot(x, p)
 
@@ -27,7 +28,7 @@ def lsd_risk_measure(x, k, p=None):
 def lsd_rm_identifier(x, k, p=None):
     n = len(x)
     assert k > 0
-    if not p:
+    if p is None:
         p = np.ones(n) / n
     ex = np.dot(x, p)
     z = np.zeros(n)
@@ -44,13 +45,19 @@ def ex4_objective(data, labels, k, h):
     # find optimal w, b
     n, m = np.shape(data)
     w0 = np.ones(m + 1)
+    w0[-1] = 0
     cons = {'type': 'ineq', 'fun': lambda w_:
-            -lsd(np.array([labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1 for i in range(n)]))}
-    res = minimize(lambda w_: np.dot(w_, w_)/2, w0, method='SLSQP', constraints=cons)
+            -lsd_risk_measure(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), k)}
+    res = minimize(lambda w_: np.dot(w_, w_)/2, w0,
+                   method='COBYLA', options={'maxiter': 10000},
+                   constraints=cons)
     print(res.message)
     w = res.x[:m]
     b = res.x[-1]
+    print('w= ', w)
+    print('b= ', b)
+    print('cons= ', lsd_risk_measure(np.array([(labels[i] * (np.dot(w, data[i]) + b) - 1) for i in range(n)]), k))
     x = np.array([labels[i] * (np.dot(w, data[i]) + b) - 1 for i in range(n)])
     q = lsd_rm_identifier(x, k)
     ret = sum([labels[i]*np.dot(h[i], w)*q[i] for i in range(n)])/n
-    return ret
+    return ret, res.success
