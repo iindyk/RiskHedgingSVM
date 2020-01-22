@@ -16,7 +16,7 @@ def plot_k(obj, data, labels, h, min_k, max_k, step_k, title):
             ks.append(new_k)
             objs.append(new_obj)
 
-    plt.xlabel('kappa')
+    plt.xlabel('alpha')
     plt.ylabel('f')
     plt.title(title)
     plt.plot(ks, objs, 'go--')
@@ -26,13 +26,16 @@ def plot_k(obj, data, labels, h, min_k, max_k, step_k, title):
 if __name__ == '__main__':
     n = 1000
     m = 10
-    min_k = 0.1
-    max_k = 2
+    min_k = 0.5
+    max_k = 1
     step_k = 0.05
     #title = 'lower semideviation-based risk measure'
     #fun = functions.ex4_objective
-    title = 'standard deviation-based risk measure'
-    fun = functions.ex5_objective
+    #title = 'standard deviation-based risk measure'
+    #fun = functions.ex5_objective
+    title = 'CVaR'
+    fun = functions.ex6_objective
+
     # create h
     h = np.ones((n, m)) / np.sqrt(m)
     data, labels = data.get_toy_dataset(n, m)
