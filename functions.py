@@ -112,7 +112,7 @@ def ex4_objective(data, labels, k, h):
     w0[-1] = 0
     cons = {'type': 'ineq', 'fun': lambda w_:
     -lsd_risk_measure(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), k)}
-    res = minimize(lambda w_: np.dot(w_, w_) / 2, w0,
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
                    method='trust-constr', options={'maxiter': 10000},
                    constraints=cons)
     print(res.message)
@@ -135,7 +135,7 @@ def ex5_objective(data, labels, k, h):
     w0[-1] = 0
     cons = {'type': 'ineq', 'fun': lambda w_:
     -sd_risk_measure(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), k)}
-    res = minimize(lambda w_: np.dot(w_, w_) / 2, w0,
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
                    method='trust-constr', options={'maxiter': 10000},
                    constraints=cons)
     print(res.message)
@@ -158,7 +158,7 @@ def ex6_objective(data, labels, alpha, h):
     w0[-1] = 0
     cons = {'type': 'ineq', 'fun': lambda w_:
         -cvar(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), alpha)}
-    res = minimize(lambda w_: np.dot(w_, w_) / 2, w0,
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
                    method='trust-constr', options={'maxiter': 10000},
                    constraints=cons)
     print(res.message)
