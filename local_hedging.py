@@ -16,7 +16,7 @@ def plot_k(obj, data, labels, h, min_k, max_k, step_k, title):
             ks.append(new_k)
             objs.append(new_obj)
 
-    plt.xlabel('alpha')
+    plt.xlabel('kappa')
     plt.ylabel('f')
     plt.title(title)
     plt.plot(ks, objs, 'go--')
@@ -24,9 +24,9 @@ def plot_k(obj, data, labels, h, min_k, max_k, step_k, title):
 
 
 if __name__ == '__main__':
-    n = 100
+    n = 1000
     m = 10
-    min_k = 0.4
+    min_k = 0.5
     max_k = 1
     step_k = 0.05
     #title = 'lower semideviation-based risk measure'

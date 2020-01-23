@@ -14,6 +14,7 @@ def find_lambdas(data, labels, h, alphas):
     w0[-1] = 0
     errs = []
     nit = 0
+    maxit = 100
     while True:
         # calculate q with t=0
         cons = {'type': 'ineq', 'fun': lambda w_:
@@ -67,7 +68,7 @@ def find_lambdas(data, labels, h, alphas):
             print(res.message)
             print('skipping the iteration, resetting lambdas')
             lambdas = np.ones(n) / n
-        if err < 1e-5:
+        if err < 1e-5 or nit > maxit:
             break
     # plot errors, print lambdas
     plt.plot(np.arange(nit), errs)
