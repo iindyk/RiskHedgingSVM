@@ -159,7 +159,7 @@ def ex6_objective(data, labels, alpha, h):
     cons = {'type': 'ineq', 'fun': lambda w_:
         -cvar(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), alpha)}
     res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
-                   method='trust-constr', options={'maxiter': 10000},
+                   method='SLSQP', options={'maxiter': 10000},
                    constraints=cons)
     print(res.message)
     w = res.x[:m]

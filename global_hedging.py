@@ -22,7 +22,7 @@ def find_lambdas(data, labels, h, alphas):
             np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), alphas[j]) for j in
               range(n_l)])}
         res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
-                       method='trust-constr', options={'maxiter': 10000},
+                       method='SLSQP', options={'maxiter': 10000},
                        constraints=cons)
         print(res.message)
         w = res.x[:m]
@@ -39,7 +39,7 @@ def find_lambdas(data, labels, h, alphas):
             np.array([(labels[i] * (np.dot(w_[:m], data[i] + h[i]) + w_[-1]) - 1) for i in range(n)]), alphas[j]) for j
               in range(n_l)])}
         res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
-                       method='trust-constr', options={'maxiter': 10000},
+                       method='SLSQP', options={'maxiter': 10000},
                        constraints=cons)
         print(res.message)
         w = res.x[:m]
@@ -72,13 +72,17 @@ def find_lambdas(data, labels, h, alphas):
             break
     # plot errors, print lambdas
     plt.plot(np.arange(nit), errs)
+    cons_viol = abs(sum(lambdas)-1)
+    for i in range(m):
+        cons_viol += abs(np.dot(lambdas, a[i]))
+    print('constraint violation= ', cons_viol)
     print(lambdas)
 
 
 if __name__ == '__main__':
     n = 100
-    m = 10
-    alphas = [0.1*i for i in range(10)]
+    m = 5
+    alphas = [0.1*i for i in range(1, 10)]
     # create h
     h = np.ones((n, m)) / np.sqrt(m)
     data, labels = data.get_toy_dataset(n, m)
