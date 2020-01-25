@@ -14,8 +14,9 @@ def find_lambdas(data, labels, h, alphas):
     w0[-1] = 0
     errs = []
     nit = 0
-    maxit = 100
+    maxit = 1
     while True:
+        print('iteration #', nit)
         # calculate q with t=0
         cons = {'type': 'ineq', 'fun': lambda w_:
         -sum([lambdas[j] * functions.cvar(
@@ -55,10 +56,11 @@ def find_lambdas(data, labels, h, alphas):
         cons = [{'type': 'eq', 'fun': lambda l: sum(l)-1}]
         for i in range(m):
             cons.append({'type': 'eq', 'fun': lambda l: np.dot(l, a[i])})
+        bounds = [(0, 1)] * n_l
 
         res = minimize(lambda l: np.dot(l-lambdas, l-lambdas), l0,
                        method='trust-constr', options={'maxiter': 10000},
-                       constraints=cons)
+                       bounds=bounds, constraints=cons)
         err = np.linalg.norm(lambdas - res.x)
         errs.append(err)
         nit += 1
@@ -72,6 +74,9 @@ def find_lambdas(data, labels, h, alphas):
             break
     # plot errors, print lambdas
     plt.plot(np.arange(nit), errs)
+    plt.xlabel('iteration #')
+    plt.ylabel('l2 error')
+    plt.show()
     cons_viol = abs(sum(lambdas)-1)
     for i in range(m):
         cons_viol += abs(np.dot(lambdas, a[i]))
@@ -82,7 +87,8 @@ def find_lambdas(data, labels, h, alphas):
 if __name__ == '__main__':
     n = 100
     m = 5
-    alphas = [0.1*i for i in range(1, 10)]
+    k = 8
+    alphas = [i/k for i in range(1, k)]
     # create h
     h = np.ones((n, m)) / np.sqrt(m)
     data, labels = data.get_toy_dataset(n, m)

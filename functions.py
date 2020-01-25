@@ -10,7 +10,7 @@ def lsd(x, p=None):
     ex = np.dot(x, p)
     ret = 0
     for i in range(n):
-        ret += (max(0, ex - x[i]) ** 2) * p[i]
+        ret += ((max(0, ex - x[i])) ** 2) * p[i]
     assert ret != 0
     return np.sqrt(ret)
 
@@ -70,8 +70,9 @@ def lsd_rm_identifier(x, k, p=None):
         z[i] = max(0, ex - x[i])
     ez = np.dot(z, p)
     ret = np.zeros(n)
+    lsd_ = lsd(x, p)
     for i in range(n):
-        ret[i] = 1 - k * (ez - z[i]) / lsd(x, p)
+        ret[i] = 1 - k * (ez - z[i]) / lsd_
     return ret
 
 
@@ -83,8 +84,9 @@ def sd_rm_identifier(x, k, p=None):
         p = np.ones(n) / n
     ex = np.dot(x, p)
     ret = np.zeros(n)
+    sd_ = sd(x, p)
     for i in range(n):
-        ret[i] = 1 - k * (x[i] - ex) / sd(x, p)
+        ret[i] = 1 - k * (x[i] - ex) / sd_
     return ret
 
 
@@ -172,3 +174,62 @@ def ex6_objective(data, labels, alpha, h):
     _, q = cvar_identifier(x, alpha)
     ret = sum([labels[i] * np.dot(h[i], w) * q[i] for i in range(n)]) / n
     return ret, res.success and con < 1e-5
+
+
+def get_histogram(x, a, b, n_bins):
+    ret = np.zeros(n_bins)
+    h = (b-a)/n_bins
+    for xi in x:
+        if xi <= a+h:
+            ret[0] += 1
+        elif xi > b-h:
+            ret[-1] += 1
+        else:
+            ret[int((xi-a)/h)] += 1
+    return ret
+
+
+def decompose_x(x, m, n):
+    return x[:m], x[m], x[m + 1:m * n + m + 1], \
+           x[m * n + m + 1:(m + 1) * n + m + 1], x[(m + 1) * n + m + 1:(m + 2) * n + m + 1]  # w, b, h, l, a
+
+
+def approx_fun(x):
+    return max(x, -1.0)
+
+
+def adv_obj(x, dataset, labels):
+    n = len(dataset)
+    m = len(dataset[0])
+    av = 0.0
+    for i in range(0, n):
+        av += approx_fun(labels[i] * (np.dot(x[:m], dataset[i]) + x[m]))
+    return av
+
+
+def class_constr_inf_ineq_convex_cobyla(x, w_prev, dataset, labels, eps, C):
+    ret = []
+    n, m = np.shape(dataset)
+    w, b, h, l, a = decompose_x(x, m, n)
+    for i in range(0, n):
+        ret.append(l[i])  # for cobyla only
+        ret.append(C - l[i])  # for cobyla only
+        ret.append(a[i])  # for cobyla only
+        ret.append(
+            labels[i] * (np.dot(w, dataset[i]) + np.dot(w_prev, [h[j * n + i] for j in range(0, m)]) + b) - 1 + a[i])
+    ret.append(eps * n - np.dot(h, h))
+    return np.array(ret)
+
+
+def class_constr_inf_eq_convex(x, w_prev, l_prev, dataset, labels, C):
+    ret = []
+    n, m = np.shape(dataset)
+    w, b, h, l, a = decompose_x(x, m, n)
+    for j in range(0, m):
+        ret.append(w[j] - sum([l_prev[i] * labels[i] * (dataset[i][j] + h[j * n + i]) for i in range(0, n)]))
+    ret.append(sum([l[i] * labels[i] for i in range(0, n)]))
+    for i in range(0, n):
+        hi = [h[j * n + i] for j in range(0, m)]
+        ret.append(l[i] - l_prev[i] * a[i] - l_prev[i] * labels[i] * (np.dot(w, dataset[i]) + np.dot(w_prev, hi) + b))
+        ret.append(l_prev[i] * a[i] - C * a[i])
+    return np.array(ret)
