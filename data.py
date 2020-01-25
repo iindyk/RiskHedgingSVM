@@ -63,48 +63,63 @@ def get_covariate_shift(data, labels, dist):
 def get_adversarial_shift(data, labels, dist):
     n, m = np.shape(data)
     C = 1.0
-    maxit = 10
+    maxit = 100
     eps = dist/100
     delta = 1e-4
+    maxnum = int(0.3*n)
     svc = svm.SVC(kernel='linear', C=C).fit(data, labels)
     predicted_labels = svc.predict(data)
     err_orig = 1 - accuracy_score(labels, predicted_labels)
     print('err on orig is ' + str(int(err_orig * 100)) + '%')
+    dataset_trunc, labels_trunc, indices \
+        = truncate_by_dist(data, labels, maxnum)
+    n_t = len(dataset_trunc)
+    print('number of closest chosen points is ' + str(n_t))
     w = np.zeros(m)
-    l = np.zeros(n)
-    x_opt = np.zeros((m + 2) * n + m + 1)
+    l = np.zeros(n_t)
     nit = 0
     while nit < maxit:
         print('iteration ' + str(nit) + '; start: ' + str(datetime.datetime.now().time()))
         con1 = {'type': 'ineq', 'fun': fn.class_constr_inf_eq_convex,
-                'args': [w, l, data, labels, C]}
+                'args': [w, l, dataset_trunc, labels_trunc, C]}
         con2 = {'type': 'ineq',
-                'fun': lambda x: -1 * fn.class_constr_inf_eq_convex(x, w, l, data, labels, C)}
+                'fun': lambda x: -1 * fn.class_constr_inf_eq_convex(x, w, l, dataset_trunc, labels_trunc, C)}
         con3 = {'type': 'ineq', 'fun': fn.class_constr_inf_ineq_convex_cobyla,
-                'args': [w, data, labels, eps, C]}
+                'args': [w, dataset_trunc, labels_trunc, eps, C]}
         cons = [con1, con2, con3]
-        sol = minimize(fn.adv_obj, x_opt, args=(data, labels), constraints=cons, options={'maxiter': 10000},
-                       method='trust-constr')
+        sol = minimize(fn.adv_obj, np.zeros((m + 2) * n_t + m + 1), args=(dataset_trunc, labels_trunc), constraints=cons,
+                       options={'maxiter': 10000},
+                       method='COBYLA')
         print('success: ' + str(sol.success))
         print('message: ' + str(sol.message))
         x_opt = sol.x[:]
-        w, b, h, l, a = fn.decompose_x(x_opt, m, n)
+        w, b, h, l, a = fn.decompose_x(x_opt, m, n_t)
         print('nfev= ' + str(sol.nfev))
         print('w= ' + str(w))
         print('b= ' + str(b))
-        print('attack_norm= ' + str(100 * np.dot(h, h) // (n * eps)) + '%')
-        if fn.adv_obj(x_opt, data, labels) <= sol.fun + delta \
-                and max(fn.class_constr_inf_eq_convex(x_opt, w, l, data, labels, C)) <= delta \
-                and min(fn.class_constr_inf_eq_convex(x_opt, w, l, data, labels, C)) >= -delta \
+        print('attack_norm= ' + str(100 * np.dot(h, h) // (n_t * eps)) + '%')
+        if fn.adv_obj(x_opt, dataset_trunc, labels_trunc) <= sol.fun + delta \
+                and max(fn.class_constr_inf_eq_convex(x_opt, w, l, dataset_trunc, labels_trunc, C)) <= delta \
+                and min(fn.class_constr_inf_eq_convex(x_opt, w, l, dataset_trunc, labels_trunc, C)) >= -delta \
                 and min(
-            fn.class_constr_inf_ineq_convex_cobyla(x_opt, w, data, labels, eps, C)) >= -delta \
-                and sol.success and np.dot(h, h) / n >= eps - 100 * delta:
+            fn.class_constr_inf_ineq_convex_cobyla(x_opt, w, dataset_trunc, labels_trunc, eps, C)) >= -delta \
+                and sol.success and np.dot(h, h) / n_t >= eps - 100 * delta:
             break
         nit += 1
 
-    dataset_infected = data + h
+    dataset_infected = []
     print('attack norm= ' + str(np.dot(h, h) / n))
     print('objective value= ' + str(sol.fun))
+    k = 0
+    for i in range(0, n):
+        tmp = []
+        if i in indices:
+            for j in range(0, m):
+                tmp.append(data[i][j] + h[j * n_t + k])
+            k += 1
+        else:
+            tmp = data[i]
+        dataset_infected.append(tmp)
     svc1 = svm.SVC(kernel='linear', C=C)
     svc1.fit(dataset_infected, labels)
     predicted_labels_inf_svc = svc1.predict(data)
@@ -151,8 +166,8 @@ def get_adversarial_shift_alt(data, labels, dist):
         nit += 1
         dataset_inf = np.array(data) + np.transpose(np.reshape(h, (m, n)))
         svc = svm.SVC(kernel='linear', C=C).fit(dataset_inf, labels)
-        if (obj_p - obj < delta and np.dot(h, h) >= n * eps - delta) or not sol.success \
-                or fn.coeff_diff(w, svc.coef_[0], b, svc.intercept_) > delta:
+        if (obj_p - obj < delta and np.dot(h, h) >= n * eps - delta) or not sol.success: #\
+                #or fn.coeff_diff(w, svc.coef_[0], b, svc.intercept_) > delta:
             break
 
     dataset_inf = np.array(data) + np.transpose(np.reshape(h_p, (m, n)))
@@ -173,3 +188,39 @@ def get_adversarial_shift_alt(data, labels, dist):
     err_inf_opt = 1 - accuracy_score(labels, predicted_labels_inf_opt)
     print('err on infected dataset by opt is ' + str(int(100 * err_inf_opt)) + '%')
     return dataset_inf, labels
+
+
+def truncate_by_dist(dataset, labels, muxnum):
+    n, m = np.shape(dataset)
+    dist = np.zeros(n)
+    # calculate the distance
+    for i in range(n):
+        dist[i] = abs(dataset[i, 1]-dataset[i, 0])/np.sqrt(2)
+    indices = dist.argsort()[:muxnum]
+    dataset_trunc = dataset[indices]
+    labels_trunc = labels[indices]
+    return dataset_trunc, labels_trunc, indices
+
+
+def get_poisoning_turn(dataset, labels, dist):
+    n, m = np.shape(dataset)
+    turn = np.radians(20)
+    maxnum = int(0.5*n)
+    svc = svm.SVC(kernel='linear', C=1)
+    svc.fit(dataset, labels)
+    predicted_labels = svc.predict(dataset)
+    err = 1 - accuracy_score(labels, predicted_labels)
+    print('err on original dataset by svc is ' + str(int(100 * err)) + '%')
+    _, _, indices = truncate_by_dist(dataset, labels, maxnum)
+    dataset_infected = np.array(dataset)
+    for i in indices:
+        dataset_infected[i, 0] = np.cos(turn)*dataset[i, 0]-np.sin(turn)*dataset[i, 1]
+        dataset_infected[i, 1] = np.sin(turn)*dataset[i, 0]+np.cos(turn)*dataset[i, 1]
+    svc1 = svm.SVC(kernel='linear', C=1)
+    svc1.fit(dataset_infected, labels)
+    predicted_labels_inf_svc = svc1.predict(dataset)
+    err_inf_svc = 1 - accuracy_score(labels, predicted_labels_inf_svc)
+    print('err on infected dataset by svc is ' + str(int(100 * err_inf_svc)) + '%')
+
+    return dataset_infected, labels
+

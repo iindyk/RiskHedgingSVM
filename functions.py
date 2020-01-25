@@ -179,6 +179,7 @@ def ex6_objective(data, labels, alpha, h):
 def get_histogram(x, a, b, n_bins):
     ret = np.zeros(n_bins)
     h = (b-a)/n_bins
+    bins = np.array([a+h*i for i in range(n_bins)])
     for xi in x:
         if xi <= a+h:
             ret[0] += 1
@@ -186,7 +187,7 @@ def get_histogram(x, a, b, n_bins):
             ret[-1] += 1
         else:
             ret[int((xi-a)/h)] += 1
-    return ret
+    return ret/len(x), bins
 
 
 def decompose_x(x, m, n):
