@@ -198,6 +198,23 @@ def approx_fun(x):
     return max(x, -1.0)
 
 
+def class_obj_inf(w, b, h, dataset, labels, C):
+    av = 0.0
+    n, m = np.shape(dataset)
+    dataset_inf = np.array(dataset) + np.transpose(np.reshape(h, (m, n)))
+    for i in range(n):
+        av += max(0, 1 - labels[i]*(np.dot(w, dataset_inf[i])+b))
+    return C*av + np.dot(w, w)/2
+
+
+def coeff_diff(w1, w2, b1, b2):
+    w1_n = w1 / np.sqrt(np.dot(w1, w1) + b1 ** 2)
+    b1_n = b1 / np.sqrt(np.dot(w1, w1) + b1 ** 2)
+    w2_n = w2 / np.sqrt(np.dot(w2, w2) + b2 ** 2)
+    b2_n = b2 / np.sqrt(np.dot(w2, w2) + b2 ** 2)
+    return np.sqrt(np.dot(w1_n - w2_n, w1_n - w2_n) + (b1_n - b2_n) ** 2)
+
+
 def adv_obj(x, dataset, labels):
     n = len(dataset)
     m = len(dataset[0])
@@ -205,6 +222,20 @@ def adv_obj(x, dataset, labels):
     for i in range(0, n):
         av += approx_fun(labels[i] * (np.dot(x[:m], dataset[i]) + x[m]))
     return av
+
+
+def adv_obj_gradient(x, dataset, labels):
+    ret = []
+    n, m = np.shape(dataset)
+    for j in range(0, m):
+        ret.append(
+            sum([labels[i] * dataset[i][j] * (1.0 if labels[i] * (np.dot(x[:m], dataset[i]) + x[m]) > -1.0 else 0.0)
+                 for i in range(0, n)]))  # with respect to w[j]
+    ret.append(sum([labels[i] * (1.0 if labels[i] * (np.dot(x[:m], dataset[i]) + x[m]) > -1.0 else 0.0)
+                    for i in range(0, n)]))  # with respect to b
+    for i in range(0, (2 + m) * n):
+        ret.append(0.0)  # with respect to h, l, a
+    return np.array(ret)
 
 
 def class_constr_inf_ineq_convex_cobyla(x, w_prev, dataset, labels, eps, C):

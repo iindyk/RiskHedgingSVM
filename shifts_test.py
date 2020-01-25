@@ -3,7 +3,7 @@ import functions
 import numpy as np
 
 
-n = 1000
+n = 100
 m = 2
 dist = 10
 
@@ -22,6 +22,6 @@ data.graph_dataset(data_covariate_shift, labels, 'covariate shift')
 print('covariate shift distance=', np.linalg.norm(dataset-data_covariate_shift))
 
 # get poisoned dataset
-data_infected, labels = data.get_adversarial_shift(dataset, labels, dist)
+data_infected, labels = data.get_adversarial_shift_alt(dataset, labels, dist)
 data.graph_dataset(data_infected, labels, 'poisoning')
 print('infected dataset distance=', np.linalg.norm(dataset-data_infected))

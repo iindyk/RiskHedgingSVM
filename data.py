@@ -63,7 +63,7 @@ def get_covariate_shift(data, labels, dist):
 def get_adversarial_shift(data, labels, dist):
     n, m = np.shape(data)
     C = 1.0
-    maxit = 100
+    maxit = 10
     eps = dist/100
     delta = 1e-4
     svc = svm.SVC(kernel='linear', C=C).fit(data, labels)
@@ -84,7 +84,7 @@ def get_adversarial_shift(data, labels, dist):
                 'args': [w, data, labels, eps, C]}
         cons = [con1, con2, con3]
         sol = minimize(fn.adv_obj, x_opt, args=(data, labels), constraints=cons, options={'maxiter': 10000},
-                       method='COBYLA')
+                       method='trust-constr')
         print('success: ' + str(sol.success))
         print('message: ' + str(sol.message))
         x_opt = sol.x[:]
@@ -111,3 +111,65 @@ def get_adversarial_shift(data, labels, dist):
     err_inf_svc = 1 - accuracy_score(labels, predicted_labels_inf_svc)
     print('err on infected dataset by svc is ' + str(int(100 * err_inf_svc)) + '%')
     return dataset_infected, labels
+
+
+def get_adversarial_shift_alt(data, labels, dist):
+    C = 1.0
+    maxit = 100
+    learning_rate = 1e-5
+    eps = dist
+    delta = 1e-2
+    n, m = np.shape(data)
+    svc = svm.SVC(kernel='linear', C=C).fit(data, labels)
+    predicted_labels = svc.predict(data)
+    err_orig = 1 - accuracy_score(labels, predicted_labels)
+    print('err on orig is ' + str(int(err_orig * 100)) + '%')
+    nit = 0
+    w = svc.coef_[0][:]
+    b = svc.intercept_
+    obj = 1e10
+    h = np.zeros(m * n)
+    while nit < maxit:
+        print('iteration ' + str(nit) + '; start: ' + str(datetime.datetime.now().time()))
+        h_p = h[:]
+        obj_p = obj
+        grad = fn.adv_obj_gradient(list(w) + [b] + [0.0 for i in range((m + 2) * n)], data, labels)
+        w = w - learning_rate * grad[:m]
+        b = b - learning_rate * grad[m]
+        con = {'type': 'ineq', 'fun': lambda x: n * eps - np.dot(x, x)}
+        cons = [con]
+        sol = minimize(lambda x: fn.class_obj_inf(w, b, x, data, labels, C), np.zeros(m * n), constraints=cons)
+        if sol.success:
+            h = sol.x[:]
+        print('success: ' + str(sol.success))
+        print('message: ' + str(sol.message))
+        print('nfev= ' + str(sol.nfev))
+        print('w= ' + str(w))
+        print('b= ' + str(b))
+        print('attack_norm= ' + str(100 * np.dot(h, h) // (n * eps)) + '%')
+        obj = fn.adv_obj(list(w) + [b] + [0.0 for i in range((m + 2) * n)], data, labels)
+        nit += 1
+        dataset_inf = np.array(data) + np.transpose(np.reshape(h, (m, n)))
+        svc = svm.SVC(kernel='linear', C=C).fit(dataset_inf, labels)
+        if (obj_p - obj < delta and np.dot(h, h) >= n * eps - delta) or not sol.success \
+                or fn.coeff_diff(w, svc.coef_[0], b, svc.intercept_) > delta:
+            break
+
+    dataset_inf = np.array(data) + np.transpose(np.reshape(h_p, (m, n)))
+    indices = range(n)
+    # define infected points for graph
+    inf_points = []
+    k = 0
+    for i in indices:
+        if sum([h_p[j * n + k] ** 2 for j in range(m)]) > 0.9 * eps:
+            inf_points.append(dataset_inf[i])
+        k += 1
+    svc1 = svm.SVC(kernel='linear', C=C)
+    svc1.fit(dataset_inf, labels)
+    predicted_labels_inf_svc = svc1.predict(data)
+    err_inf_svc = 1 - accuracy_score(labels, predicted_labels_inf_svc)
+    print('err on infected dataset by svc is ' + str(int(100 * err_inf_svc)) + '%')
+    predicted_labels_inf_opt = np.sign([np.dot(data[i], w) + b for i in range(0, n)])
+    err_inf_opt = 1 - accuracy_score(labels, predicted_labels_inf_opt)
+    print('err on infected dataset by opt is ' + str(int(100 * err_inf_opt)) + '%')
+    return dataset_inf, labels
