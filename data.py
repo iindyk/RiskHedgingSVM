@@ -6,6 +6,10 @@ from random import randint
 from scipy.optimize import minimize
 from sklearn import svm
 from sklearn.metrics import accuracy_score
+from art.attacks import PoisoningAttackSVM
+from art.classifiers import SklearnClassifier
+import os
+import pickle
 
 
 # returns a dataset of points from [0, 1]^m
@@ -27,6 +31,130 @@ def get_toy_dataset(n, m, random_flips=0.1, horizontal=False):
     return dataset, labels
 
 
+def get_breast_cancer_dataset():
+    f = open("wdbc.data", "r")
+    data = []
+    labels = []
+    for line in f:
+        arr = line.split(',')[1:]
+        if arr[0] == 'B':
+            labels.append(1.)
+        else:
+            labels.append(-1.)
+        data.append(np.array([float(s) for s in arr[1:]]))
+    f.close()
+    data = np.array(data)
+    labels = np.array(labels)
+    class0 = np.sum(labels == 1.)
+    class1 = np.sum(labels == -1.)
+    print('dataset generated; class 1: ', class0, ' points, class -1: ', class1, ' points.')
+    return data, labels
+
+
+def get_gait_freeze_dataset():
+    data_files = os.listdir("dataset_fog_release/")
+    data = []
+    labels = []
+    for f_path in data_files:
+        f = open("dataset_fog_release/"+f_path, "r")
+
+        for line in f:
+            arr = line.split(' ')[1:]
+            if arr[-1] == '1\n':
+                labels.append(1.)
+                data.append(np.array([float(s) for s in arr[:9]]))
+            elif arr[-1] == '2\n':
+                labels.append(-1.)
+                data.append(np.array([float(s) for s in arr[:9]]))
+        f.close()
+    data = np.array(data)[:5000]
+    labels = np.array(labels)[:5000]
+    class0 = np.sum(labels == 1.)
+    class1 = np.sum(labels == -1.)
+    print('dataset generated; class 1: ', class0, ' points, class -1: ', class1, ' points.')
+    print(data[:5])
+    return data, labels
+
+
+def get_diabetic_dataset():
+    f = open("diabetic_retinopathy.arff", 'r')
+    data = []
+    labels = []
+    for line in f:
+        if line[0] in ('@', ' '):
+            continue
+        arr = line.split(',')
+        if arr[-1] == '0\n':
+            labels.append(1.)
+        else:
+            labels.append(-1.)
+        data.append(np.array([float(s) for s in arr[:-1]]))
+    f.close()
+    data = np.array(data)
+    labels = np.array(labels)
+    class0 = np.sum(labels == 1.)
+    class1 = np.sum(labels == -1.)
+    print('dataset generated; class 1: ', class0, ' points, class -1: ', class1, ' points.')
+    return data, labels
+
+
+def get_parkinson_dataset():
+    f = open("parkinson_dataset/train_data.txt", "r")
+    data = []
+    labels = []
+    for line in f:
+        arr = line.split(',')[1:]
+        if arr[-1] == '0\n':
+            labels.append(1.)
+        else:
+            labels.append(-1.)
+        data.append(np.array([float(s) for s in arr[:-1]]))
+    f.close()
+    data = np.array(data)
+    labels = np.array(labels)
+    class0 = np.sum(labels == 1.)
+    class1 = np.sum(labels == -1.)
+    print('dataset generated; class 1: ', class0, ' points, class -1: ', class1, ' points.')
+    return data, labels
+
+
+def get_spectf_heart_dataset():
+    f = open("spectf_heart_dataset/SPECTF.train", "r")
+    data = []
+    labels = []
+    for line in f:
+        arr = line.split(',')
+        if arr[0] == '0':
+            labels.append(1.)
+        else:
+            labels.append(-1.)
+        data.append(np.array([float(s) for s in arr]))
+    f.close()
+    data = np.array(data)
+    labels = np.array(labels)
+    class0 = np.sum(labels == 1.)
+    class1 = np.sum(labels == -1.)
+    print(data[:5])
+    print('dataset generated; class 1: ', class0, ' points, class -1: ', class1, ' points.')
+    return data, labels
+
+
+def save_to_pickle(data, labels, name):
+    obj = {'data': data, 'labels': labels}
+    with open(name+'.pickle', 'wb') as f:
+        pickle.dump(obj, f)
+        f.close()
+    print('Data saved!')
+
+
+def load_from_pickle(name):
+    with open(name+'.pickle', 'rb') as f:
+        obj = pickle.load(f)
+        f.close()
+    print('Data loaded!')
+    return obj['data'], obj['labels']
+
+
 def graph_dataset(data, labels, title):
     # make colors
     colors = []
@@ -45,7 +173,8 @@ def get_concept_drift(data, labels, dist):
     n, m = np.shape(data)
     for i in range(n):
         ret[i, 0] = data[i, 0]
-        ret[i, 1] = ((data[i, 1]+1)**2 - 2)/2
+        for j in range(1, m):
+            ret[i, j] = data[i, j]**2
     diff = np.linalg.norm(data - ret)
     ret = (dist/diff)*ret + (1-dist/diff)*data
     return ret, labels
@@ -55,9 +184,48 @@ def get_covariate_shift(data, labels, dist):
     ret = np.zeros_like(data)
     n, m = np.shape(data)
     for i in range(n):
-        ret[i, 0] = data[i, 0] - labels[i]*dist/np.sqrt(n)
-        ret[i, 1] = data[i, 1]
+        for j in range(m):
+            ret[i, j] = data[i, j] - dist/np.sqrt(m*n)#labels[i]*dist/np.sqrt(m*n)
     return ret, labels
+
+
+def get_poisoning(data, labels, dist):
+    n, m = np.shape(data)
+    step = 0.1
+    eps = 0.1
+    num_pois = int(0.3*n)
+    poisoning_indices = np.random.randint(low=0, high=n-1, size=num_pois)
+    svc = svm.SVC(kernel='linear')
+    classifier = SklearnClassifier(model=svc, clip_values=(0, 100))
+    one_hot_labels = []
+    for l in labels:
+        if l == 1:
+            one_hot_labels.append(np.array([1, 0]))
+        else:
+            one_hot_labels.append(np.array([0, 1]))
+    one_hot_labels = np.array(one_hot_labels)
+    classifier.fit(data, one_hot_labels)
+
+    # evaluate classifier on benign data
+    predictions = classifier.predict(data)
+    err_orig = accuracy_score(labels, np.argmax(predictions, axis=1)*2-1)
+    print('Error on benign data: {}%'.format(err_orig * 100))
+
+    # create adversarial examples
+    attack = PoisoningAttackSVM(classifier=classifier, step=step, eps=eps, x_train=data, y_train=one_hot_labels,
+                                x_val=data, y_val=one_hot_labels, max_iter=100)
+    pois_data = attack.generate(data[poisoning_indices, :], one_hot_labels[poisoning_indices, :])
+    data_infected = np.array(data)
+    for i in range(len(poisoning_indices)):
+        data_infected[poisoning_indices[i]] = pois_data[i]
+
+    # evaluate poisoned classifier on benign data
+    svc1 = svm.SVC(kernel='linear')
+    svc1.fit(data_infected, labels)
+    predictions = svc1.predict(data)
+    err_pois = 1 - accuracy_score(labels, predictions)
+    print('Poisoned error on benign data: {}%'.format(err_pois * 100))
+    return data_infected, labels
 
 
 def get_adversarial_shift(data, labels, dist):
