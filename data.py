@@ -14,7 +14,7 @@ import pickle
 
 # returns a dataset of points from [0, 1]^m
 def get_toy_dataset(n, m, random_flips=0.1, horizontal=False):
-    dataset = np.random.uniform(-1, 1, (n, m))
+    dataset = np.random.uniform(-10, 10, (n, m))
     labels = []
     for i in range(n):
         if horizontal:
@@ -212,8 +212,12 @@ def get_poisoning(data, labels, dist):
     print('Error on benign data: {}%'.format(err_orig * 100))
 
     # create adversarial examples
-    attack = PoisoningAttackSVM(classifier=classifier, step=step, eps=eps, x_train=data, y_train=one_hot_labels,
-                                x_val=data, y_val=one_hot_labels, max_iter=100)
+    attack = PoisoningAttackSVM(classifier=classifier, step=step, eps=eps,
+                                x_train=data[poisoning_indices],
+                                y_train=one_hot_labels[poisoning_indices],
+                                x_val=data[poisoning_indices],
+                                y_val=one_hot_labels[poisoning_indices],
+                                max_iter=100)
     pois_data = attack.generate(data[poisoning_indices, :], one_hot_labels[poisoning_indices, :])
     data_infected = np.array(data)
     for i in range(len(poisoning_indices)):

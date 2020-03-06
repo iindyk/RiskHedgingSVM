@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import minimize, minimize_scalar
 
 
 # lower semideviation
@@ -50,7 +50,7 @@ def cvar(x, alpha, p=None):
     n = len(x)
     if p is None:
         p = np.ones(n) / n
-    res = minimize(lambda c: -c + sum([max(c - x[i], 0) * p[i] for i in range(n)]) / alpha, 0.0)
+    res = minimize_scalar(lambda c: -c + sum([max(c - x[i], 0) * p[i] for i in range(n)]) / alpha)
     #if not res.success:
     #    print('Error in CVaR calculation!')
     #    print(res.message)

@@ -7,14 +7,14 @@ from scipy.optimize import minimize
 
 #n = 1000
 #m = 2
-dist = 12000
-_min = -20
-_max = 20
-n_bins = 50
+dist = 600
+_min = -15
+_max = 0
+n_bins = 20
 alpha = 0.05
 
 # save poisonings
-dataset, labels = data.get_diabetic_dataset()
+'''dataset, labels = data.get_diabetic_dataset()
 data_infected, labels = data.get_poisoning(dataset, labels, dist)
 data.save_to_pickle(data_infected, labels, 'diabetic_dataset_infected')
 
@@ -28,14 +28,10 @@ data.save_to_pickle(data_infected, labels, 'spectf_dataset_infected')
 
 dataset, labels = data.get_breast_cancer_dataset()
 data_infected, labels = data.get_poisoning(dataset, labels, dist)
-data.save_to_pickle(data_infected, labels, 'breast_cancer_dataset_infected')
-
-
-
+data.save_to_pickle(data_infected, labels, 'breast_cancer_dataset_infected')'''
 
 # get benign data
-#dataset, labels = data.get_toy_dataset(n, m, horizontal=True)
-dataset, labels = data.get_spectf_heart_dataset()
+dataset, labels = data.get_breast_cancer_dataset()
 
 n, m = np.shape(dataset)
 
@@ -44,11 +40,11 @@ data_concept_drift, labels = data.get_concept_drift(dataset, labels, dist)
 print('concept drift distance=', np.linalg.norm(dataset - data_concept_drift))
 
 # get covariate shift
-data_covariate_shift, labels = data.get_covariate_shift(dataset, labels, dist/1000)
+data_covariate_shift, labels = data.get_covariate_shift(dataset, labels, dist/100)
 print('covariate shift distance=', np.linalg.norm(dataset - data_covariate_shift))
 
 # get poisoned dataset
-data_infected, labels = data.get_poisoning(dataset, labels, dist)
+data_infected, _ = data.load_from_pickle('breast_cancer_dataset_infected')
 print('infected dataset distance=', np.linalg.norm(dataset - data_infected))
 
 # graph datasets
@@ -84,13 +80,13 @@ x_cova = np.array([labels[i] * (np.dot(w, data_covariate_shift[i]) + b) - 1 for 
 x_pois = np.array([labels[i] * (np.dot(w, data_infected[i]) + b) - 1 for i in range(n)])
 
 # get histograms
-hist_orig, bins = fn.get_histogram(x_orig, _min, _max, n_bins)
+hist_orig, bins = fn.get_histogram([x for x in x_orig if x <= 0], _min, _max, n_bins)
 print('orig <-5:', np.sum(x_orig < -5)/n, ' <0:', np.sum(x_orig < 0)/n)
-hist_conc, _ = fn.get_histogram(x_conc, _min, _max, n_bins)
+hist_conc, _ = fn.get_histogram([x for x in x_conc if x <= 0], _min, _max, n_bins)
 print('conc <-5:', np.sum(x_conc < -5)/n, ' <0:', np.sum(x_conc < 0)/n)
-hist_cova, _ = fn.get_histogram(x_cova, _min, _max, n_bins)
+hist_cova, _ = fn.get_histogram([x for x in x_cova if x <= 0], _min, _max, n_bins)
 print('cova <-5:', np.sum(x_cova < -5)/n, ' <0:', np.sum(x_cova < 0)/n)
-hist_pois, _ = fn.get_histogram(x_pois, _min, _max, n_bins)
+hist_pois, _ = fn.get_histogram([x for x in x_pois if x <= 0], _min, _max, n_bins)
 print('pois <-5:', np.sum(x_pois < -5)/n, ' <0:', np.sum(x_pois < 0)/n)
 
 # plot histograms
