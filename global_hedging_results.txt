@@ -1,0 +1,64 @@
+n = 300
+    m = 4
+    k = 5
+    alphas = [1-i/(3*k) for i in range(1, k+1)]
+    # create h
+    h = np.ones((n, m)) / np.sqrt(m)
+    data, labels = data.get_toy_dataset(n, m, random_flips=0.05)
+
+constraint violation=  0.00681563126008758
+lambdas:  [0.22052037 0.58927243 0.07810442 0.06371166 0.04839111]
+errors:  [0.279148790614713, 0.15606006014391338, 0.05503216123424666, 0.0319784100144825, 0.040057620595005575, 0.12128629104098546, 0.02837634763868682, 0.10583170800779061, 0.04371310705562036, 0.06266383560179087, 0.050766395973999144, 0.04605846556061155, 0.034608497291317, 0.03617734325406619, 0.05318442563747733, 0.052605701621341684, 0.05740653005731286, 0.02814171734801982, 0.047148271865128794, 0.07949558558044667, 0.042671633128539506, 0.0722979440510309, 0.025534522328923087, 0.04037790135023747, 0.035856505183119405, 0.10784271571921507, 0.09545081688655435, 0.12592139363276142, 0.0554109740882605, 0.05027327873651131, 0.11945171331444798, 0.10823074078648152, 0.09156658406346922, 0.09837223191033073, 0.11323336823333241, 0.017667197130823792, 0.07105083752682279, 0.029020302536408294, 0.032077324745574266, 0.08631309760410355, 0.11110844629896073, 0.04648484052153507, 0.09493254053783008, 0.05214277984663242, 0.04983137407616303, 0.045436945207341886, 0.039393041797357954, 0.049825298749436774, 0.014787734518085344, 0.06560265445402504, 0.01542460751700096]
+Optimization terminated successfully.
+Error of orig classifier on orig data=  0.06999999999999995
+Optimization terminated successfully.
+Error of inf classifier on orig data=  0.06666666666666665
+Error of orig svc on orig data=  0.06666666666666665
+Error of infected svc on orig data=  0.08333333333333337
+-----------------------------
+2 iterations
+n = 300
+    m = 3
+    k = 4
+    alphas = [1-i/(3*k) for i in range(1, k+1)]
+    # create h
+    h = np.ones((n, m)) / np.sqrt(m)
+    data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+    data, data_test = data[:n], data[n:]
+    labels, labels_test = labels[:n], labels[n:]
+    find_lambdas(data, labels, h, alphas, data_test, labels_test)
+
+constraint violation=  0.13785350437798544
+lambdas:  [-0.00474118 -0.008104   -0.00167789  1.0010915 ]
+errors:  [0.8679156990846347, 0.006539905595215103, 0.0009044935817061917]
+Optimization terminated successfully.
+Error of orig classifier on orig data=  0.08833333333333337
+Optimization terminated successfully.
+Error of inf classifier on orig data=  0.08666666666666667
+Error of orig l2 svc on orig data=  0.05666666666666664
+Error of inf l2 svc on orig data=  0.11833333333333329
+Error of orig l1 svc on orig data=  0.06333333333333335
+Error of inf l1 svc on orig data=  0.12
+-----------------------------------
+n = 383
+    m = 19
+    k = 20
+    alphas = [1-i/(1.5*k) for i in range(1, k+1)]
+    # create h
+    h = 20*np.ones((n, m)) / np.sqrt(m)
+    data, labels = data.get_diabetic_dataset()
+
+constraint violation=  1.207603769813364
+lambdas:  [0.05002616 0.05009246 0.04992673 0.05008623 0.04968015 0.04988418
+ 0.05001994 0.04996235 0.04998303 0.04988952 0.05020255 0.04975673
+ 0.04996976 0.05000477 0.04997878 0.05005549 0.05019947 0.05002686
+ 0.05036535 0.0498895 ]
+errors:  [0.0006655336078140946]
+Optimization terminated successfully.
+Error of orig classifier on orig data=  0.28385416666666663
+Optimization terminated successfully.
+Error of inf classifier on orig data=  0.28515625
+Error of orig l2 svc on orig data=  0.26432291666666663
+Error of inf l2 svc on orig data=  0.45703125
+Error of orig l1 svc on orig data=  0.26822916666666663
+Error of inf l1 svc on orig data=  0.30078125

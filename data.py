@@ -180,6 +180,15 @@ def get_concept_drift(data, labels, dist):
     return ret, labels
 
 
+def get_random_concept_drift(data, labels, dist):
+    ret = np.zeros_like(data)
+    n, m = np.shape(data)
+    rotate = np.multiply(np.random.uniform(-1, 1, (n, m)), data)
+    diff = np.linalg.norm(data-rotate)
+    ret = (dist/diff)*rotate + (1-dist/diff)*data
+    return ret, labels
+
+
 def get_covariate_shift(data, labels, dist):
     ret = np.zeros_like(data)
     n, m = np.shape(data)

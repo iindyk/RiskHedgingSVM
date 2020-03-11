@@ -58,6 +58,16 @@ def cvar(x, alpha, p=None):
     return res.fun
 
 
+# value-at-risk
+def var(x, alpha):
+    _x = np.array(x)
+    _x.sort()
+    n = len(x)
+    return -_x[-int(alpha*n)]
+
+
+
+
 # risk identifier of the lsd_risk_measure
 def lsd_rm_identifier(x, k, p=None):
     n = len(x)

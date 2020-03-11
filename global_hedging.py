@@ -7,16 +7,17 @@ from sklearn.metrics import accuracy_score
 from sklearn import svm
 
 
-def find_lambdas(data, labels, h, alphas):
+def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     n, m = np.shape(data)
     n_l = len(alphas)
     lambdas = np.ones(n_l) / n_l
-    l0 = np.ones(n_l) / n_l
-    w0 = np.ones(m + 1)
-    w0[-1] = 0
+    _svc = svm.SVC(kernel='linear').fit(data, labels)
+    _w0 = np.ones(m + 1)
+    _w0[:m] = _svc.coef_[0]
+    _w0[-1] = _svc.intercept_[0]
     errs = []
     nit = 0
-    maxit = 50
+    maxit = 0
     while True:
         print('iteration #', nit)
         # calculate q with t=0
@@ -24,8 +25,8 @@ def find_lambdas(data, labels, h, alphas):
         -sum([lambdas[j] * functions.cvar(
             np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), alphas[j]) for j in
               range(n_l)])}
-        res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
-                       method='COBYLA', options={'maxiter': 10000},
+        res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                       method='SLSQP', options={'maxiter': 10000},
                        constraints=cons)
         print(res.message)
         w0 = res.x[:m]
@@ -42,8 +43,8 @@ def find_lambdas(data, labels, h, alphas):
         -sum([lambdas[j] * functions.cvar(
             np.array([(labels[i] * (np.dot(w_[:m], data[i] + h[i]) + w_[-1]) - 1) for i in range(n)]), alphas[j]) for j
               in range(n_l)])}
-        res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
-                       method='COBYLA', options={'maxiter': 10000},
+        res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                       method='SLSQP', options={'maxiter': 10000},
                        constraints=cons)
         print(res.message)
         w1 = res.x[:m]
@@ -72,6 +73,7 @@ def find_lambdas(data, labels, h, alphas):
         errs.append(err)
         nit += 1
         print(res.message)
+        print('err= ', err)
         if res.success:
             lambdas = np.array(res.x)
         else:
@@ -94,51 +96,122 @@ def find_lambdas(data, labels, h, alphas):
     -sum([lambdas[j] * functions.cvar(
         np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), alphas[j]) for j in
           range(n_l)])}
-    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
-                   method='COBYLA', options={'maxiter': 10000},
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                   method='SLSQP', options={'maxiter': 10000},
                    constraints=cons)
     print(res.message)
     w0 = res.x[:m]
     b0 = res.x[-1]
-    pred_orig = np.sign(np.array([np.dot(w0, data[i])+b0 for i in range(n)]))
-    err_orig = 1 - accuracy_score(labels, pred_orig)
+    pred_orig = np.sign(np.array([np.dot(w0, data_test[i])+b0 for i in range(len(data_test))]))
+    err_orig = 1 - accuracy_score(labels_test, pred_orig)
     print('Error of orig classifier on orig data= ', err_orig)
     # calculate params on infected data
     cons = {'type': 'ineq', 'fun': lambda w_:
     -sum([lambdas[j] * functions.cvar(
         np.array([(labels[i] * (np.dot(w_[:m], data[i] + h[i]) + w_[-1]) - 1) for i in range(n)]), alphas[j]) for j
           in range(n_l)])}
-    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, w0,
-                   method='COBYLA', options={'maxiter': 10000},
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                   method='SLSQP', options={'maxiter': 10000},
                    constraints=cons)
     print(res.message)
     w1 = res.x[:m]
     b1 = res.x[-1]
-    pred_inf = np.sign(np.array([np.dot(w1, data[i])+b1 for i in range(n)]))
-    err_inf = 1 - accuracy_score(labels, pred_inf)
+    pred_inf = np.sign(np.array([np.dot(w1, data_test[i])+b1 for i in range(len(data_test))]))
+    err_inf = 1 - accuracy_score(labels_test, pred_inf)
     print('Error of inf classifier on orig data= ', err_inf)
-    # svc on orig data
+    # l2 svc on orig data
     svc_orig = svm.SVC(kernel='linear')
     svc_orig.fit(data, labels)
-    pred_svc_orig = svc_orig.predict(data)
-    err_svc_orig = 1 - accuracy_score(labels, pred_svc_orig)
-    print('Error of orig svc on orig data= ', err_svc_orig)
-    # svc on infected data
+    pred_svc_orig = svc_orig.predict(data_test)
+    err_svc_orig = 1 - accuracy_score(labels_test, pred_svc_orig)
+    print('Error of orig l2 svc on orig data= ', err_svc_orig)
+    # l2 svc on infected data
     svc_inf = svm.SVC(kernel='linear')
     svc_inf.fit(data+h, labels)
-    pred_svc_inf = svc_inf.predict(data)
-    err_svc_inf = 1 - accuracy_score(labels, pred_svc_inf)
-    print('Error of infected svc on orig data= ', err_svc_inf)
+    pred_svc_inf = svc_inf.predict(data_test)
+    err_svc_inf = 1 - accuracy_score(labels_test, pred_svc_inf)
+    print('Error of inf l2 svc on orig data= ', err_svc_inf)
+    # l1 svc on orig data
+    svc_orig_l1 = svm.LinearSVC(penalty='l1', dual=False)
+    svc_orig_l1.fit(data, labels)
+    pred_svc_orig_l1 = svc_orig_l1.predict(data_test)
+    err_svc_orig_l1 = 1 - accuracy_score(labels_test, pred_svc_orig_l1)
+    print('Error of orig l1 svc on orig data= ', err_svc_orig_l1)
+    # l1 svc on inf data
+    svc_inf_l1 = svm.LinearSVC(penalty='l1', dual=False)
+    svc_inf_l1.fit(data+h, labels)
+    pred_svc_inf_l1 = svc_inf_l1.predict(data_test)
+    err_svc_inf_l1 = 1 - accuracy_score(labels_test, pred_svc_inf_l1)
+    print('Error of inf l1 svc on orig data= ', err_svc_inf_l1)
+    # VaR-SVM on orig data
+    alpha = 0.65
+    cons = {'type': 'ineq', 'fun': lambda w_:
+        -functions.var([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1])) for i in range(n)], alpha)-1}
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                   method='trust-constr', options={'maxiter': 10000},
+                   constraints=cons)
+    print(res.message)
+    w_var_orig = res.x[:m]
+    b_var_orig = res.x[-1]
+    pred_var_orig = np.sign(np.array([np.dot(w_var_orig, data_test[i]) + b_var_orig for i in range(len(data_test))]))
+    err_var_orig = 1 - accuracy_score(labels_test, pred_var_orig)
+    print('Error of orig VaR svc on orig data= ', err_var_orig)
+    # VaR-SVM on infected data
+    cons = {'type': 'ineq', 'fun': lambda w_:
+    -functions.var([(labels[i] * (np.dot(w_[:m], data[i]+h[i]) + w_[-1])) for i in range(n)], alpha)-1}
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                   method='trust-constr', options={'maxiter': 10000},
+                   constraints=cons)
+    print(res.message)
+    w_var_inf = res.x[:m]
+    b_var_inf = res.x[-1]
+    pred_var_inf = np.sign(np.array([np.dot(w_var_inf, data_test[i]) + b_var_inf for i in range(len(data_test))]))
+    err_var_inf = 1 - accuracy_score(labels_test, pred_var_inf)
+    print('Error of inf VaR svc on orig data= ', err_var_inf)
+    # nu-SVM on orig data
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2 -
+                              (1-alpha)*functions.cvar([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1])-1) for i in range(n)], alpha), _w0,)
+    print(res.message)
+    w_nu_orig = res.x[:m]
+    b_nu_orig = res.x[-1]
+    pred_nu_orig = np.sign(np.array([np.dot(w_nu_orig, data_test[i]) + b_nu_orig for i in range(len(data_test))]))
+    err_nu_orig = 1 - accuracy_score(labels_test, pred_nu_orig)
+    print('Error of orig nu svc on orig data= ', err_nu_orig)
+    # nu-SVM on inf data
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2 -
+                              (1 - alpha) * functions.cvar(
+        [(labels[i] * (np.dot(w_[:m], data[i]+h[i]) + w_[-1])-1) for i in range(n)], alpha), _w0, )
+    print(res.message)
+    w_nu_inf = res.x[:m]
+    b_nu_inf = res.x[-1]
+    pred_nu_inf = np.sign(np.array([np.dot(w_nu_inf, data_test[i]) + b_nu_inf for i in range(len(data_test))]))
+    err_nu_inf = 1 - accuracy_score(labels_test, pred_nu_inf)
+    print('Error of orig nu svc on orig data= ', err_nu_inf)
 
     plt.show()
 
 
 if __name__ == '__main__':
-    n = 200
-    m = 4
-    k = 5
-    alphas = [1-i/(3*k) for i in range(1, k+1)]
+    n = 383
+    m = 19
+    k = 20
+    alphas = [1-i/(1.5*k) for i in range(1, k+1)]
+
+    # data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+    data, labels = data.get_diabetic_dataset()
+    data, data_test = data[:n], data[n:]
+    labels, labels_test = labels[:n], labels[n:]
+    print('data norm=', np.linalg.norm(data) / len(data))
+
     # create h
-    h = np.ones((n, m)) / np.sqrt(m)
-    data, labels = data.get_toy_dataset(n, m, random_flips=0.05)
-    find_lambdas(data, labels, h, alphas)
+    #h = 20*np.ones((n, m)) / np.sqrt(m)
+    svc = svm.LinearSVC(penalty='l1', dual=False)
+    svc.fit(data, labels)
+    h = svc.coef_[0]
+    _h = np.ones((n, m))
+    for i in range(n):
+        _h[i] = h
+    h = _h*0.1*np.linalg.norm(data)/np.linalg.norm(_h)
+    print('perturbation norm=', np.linalg.norm(h) / len(data))
+
+    find_lambdas(data, labels, h, alphas, data_test, labels_test)
