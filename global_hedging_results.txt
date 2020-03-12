@@ -62,3 +62,14 @@ Error of orig l2 svc on orig data=  0.26432291666666663
 Error of inf l2 svc on orig data=  0.45703125
 Error of orig l1 svc on orig data=  0.26822916666666663
 Error of inf l1 svc on orig data=  0.30078125
+-----------------------------------------
+ n = 383
+    m = 19
+    k = 20
+    alphas = [1-i/(1.5*k) for i in range(1, k+1)]
+    var_alpha = 0.3
+    cvar_alpha = 0.6
+    h = _h*0.02*np.linalg.norm(data)/np.linalg.norm(_h)
+    # diabetic retinopathy
+
+--------------------------------------

@@ -63,9 +63,7 @@ def var(x, alpha):
     _x = np.array(x)
     _x.sort()
     n = len(x)
-    return -_x[-int(alpha*n)]
-
-
+    return -_x[int(alpha*n)]
 
 
 # risk identifier of the lsd_risk_measure

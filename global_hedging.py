@@ -5,6 +5,8 @@ import data
 import functions
 from sklearn.metrics import accuracy_score
 from sklearn import svm
+from art.attacks import PoisoningAttackSVM
+from art.classifiers import SklearnClassifier
 
 
 def find_lambdas(data, labels, h, alphas, data_test, labels_test):
@@ -17,7 +19,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     _w0[-1] = _svc.intercept_[0]
     errs = []
     nit = 0
-    maxit = 0
+    maxit = 10
     while True:
         print('iteration #', nit)
         # calculate q with t=0
@@ -81,6 +83,10 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
             lambdas = np.ones(n_l) / n_l
         if err < 1e-3 or nit > maxit:
             break
+    ##################
+
+    #a = np.zeros((m, n_l))
+    ################
     # plot errors, print lambdas
     plt.plot(np.arange(nit), errs)
     plt.xlabel('iteration #')
@@ -144,11 +150,11 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     err_svc_inf_l1 = 1 - accuracy_score(labels_test, pred_svc_inf_l1)
     print('Error of inf l1 svc on orig data= ', err_svc_inf_l1)
     # VaR-SVM on orig data
-    alpha = 0.65
+    var_alpha = 0.16
     cons = {'type': 'ineq', 'fun': lambda w_:
-        -functions.var([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1])) for i in range(n)], alpha)-1}
+        -functions.var([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1])-1) for i in range(n)], var_alpha)}
     res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
-                   method='trust-constr', options={'maxiter': 10000},
+                   method='trust-constr', options={'maxiter': 50000},
                    constraints=cons)
     print(res.message)
     w_var_orig = res.x[:m]
@@ -158,9 +164,9 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     print('Error of orig VaR svc on orig data= ', err_var_orig)
     # VaR-SVM on infected data
     cons = {'type': 'ineq', 'fun': lambda w_:
-    -functions.var([(labels[i] * (np.dot(w_[:m], data[i]+h[i]) + w_[-1])) for i in range(n)], alpha)-1}
+    -functions.var([(labels[i] * (np.dot(w_[:m], data[i]+h[i]) + w_[-1])) for i in range(n)], var_alpha)-1}
     res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
-                   method='trust-constr', options={'maxiter': 10000},
+                   method='trust-constr', options={'maxiter': 50000},
                    constraints=cons)
     print(res.message)
     w_var_inf = res.x[:m]
@@ -169,8 +175,12 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     err_var_inf = 1 - accuracy_score(labels_test, pred_var_inf)
     print('Error of inf VaR svc on orig data= ', err_var_inf)
     # nu-SVM on orig data
-    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2 -
-                              (1-alpha)*functions.cvar([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1])-1) for i in range(n)], alpha), _w0,)
+    cvar_alpha = 0.4
+    cons = {'type': 'ineq', 'fun': lambda w_:
+    -functions.cvar(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), cvar_alpha)}
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                   method='SLSQP', options={'maxiter': 10000},
+                   constraints=cons)
     print(res.message)
     w_nu_orig = res.x[:m]
     b_nu_orig = res.x[-1]
@@ -178,40 +188,67 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     err_nu_orig = 1 - accuracy_score(labels_test, pred_nu_orig)
     print('Error of orig nu svc on orig data= ', err_nu_orig)
     # nu-SVM on inf data
-    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2 -
-                              (1 - alpha) * functions.cvar(
-        [(labels[i] * (np.dot(w_[:m], data[i]+h[i]) + w_[-1])-1) for i in range(n)], alpha), _w0, )
+    cons = {'type': 'ineq', 'fun': lambda w_:
+    -functions.cvar(np.array([(labels[i] * (np.dot(w_[:m], data[i]+h[i]) + w_[-1]) - 1) for i in range(n)]), cvar_alpha)}
+    res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
+                   method='SLSQP', options={'maxiter': 10000},
+                   constraints=cons)
     print(res.message)
     w_nu_inf = res.x[:m]
     b_nu_inf = res.x[-1]
     pred_nu_inf = np.sign(np.array([np.dot(w_nu_inf, data_test[i]) + b_nu_inf for i in range(len(data_test))]))
     err_nu_inf = 1 - accuracy_score(labels_test, pred_nu_inf)
-    print('Error of orig nu svc on orig data= ', err_nu_inf)
+    print('Error of inf nu svc on orig data= ', err_nu_inf)
 
     plt.show()
 
 
 if __name__ == '__main__':
-    n = 383
-    m = 19
-    k = 20
-    alphas = [1-i/(1.5*k) for i in range(1, k+1)]
+    n = 300
+    m = 3
+    k = 4
+    pois_share = 0.4
+    alphas = [i/k for i in range(1, k+1)]
 
-    # data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
-    data, labels = data.get_diabetic_dataset()
+    data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+    #data, labels = data.get_diabetic_dataset()
+    one_hot_labels = []
+    for l in labels:
+        if l == 1:
+            one_hot_labels.append(np.array([1, 0]))
+        else:
+            one_hot_labels.append(np.array([0, 1]))
     data, data_test = data[:n], data[n:]
     labels, labels_test = labels[:n], labels[n:]
     print('data norm=', np.linalg.norm(data) / len(data))
 
     # create h
     #h = 20*np.ones((n, m)) / np.sqrt(m)
-    svc = svm.LinearSVC(penalty='l1', dual=False)
-    svc.fit(data, labels)
-    h = svc.coef_[0]
+    svc = svm.SVC(kernel='linear').fit(data, labels)
+    '''h = svc.coef_[0]
     _h = np.ones((n, m))
     for i in range(n):
         _h[i] = h
     h = _h*0.1*np.linalg.norm(data)/np.linalg.norm(_h)
+    '''
+    classifier = SklearnClassifier(model=svc, clip_values=(0, 100))
+
+    one_hot_labels = np.array(one_hot_labels)
+    classifier.fit(data, one_hot_labels)
+    attack = PoisoningAttackSVM(classifier=classifier, step=0.1, eps=0.1,
+                                x_train=data,
+                                y_train=one_hot_labels,
+                                x_val=data_test,
+                                y_val=one_hot_labels[n:],
+                                max_iter=100)
+    poisoning_indices = np.random.randint(0, n, int(n*pois_share))
+    pois_data = attack.generate(data[poisoning_indices, :], one_hot_labels[poisoning_indices, :])
+    # construct h
+    h = np.zeros((n, m))
+    i = 0
+    for p_i in poisoning_indices:
+        h[p_i, :] = pois_data[i]-data[p_i]
+        i += 1
     print('perturbation norm=', np.linalg.norm(h) / len(data))
 
     find_lambdas(data, labels, h, alphas, data_test, labels_test)
