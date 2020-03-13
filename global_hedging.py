@@ -19,7 +19,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     _w0[-1] = _svc.intercept_[0]
     errs = []
     nit = 0
-    maxit = 10
+    maxit = 6
     while True:
         print('iteration #', nit)
         # calculate q with t=0
@@ -150,7 +150,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     err_svc_inf_l1 = 1 - accuracy_score(labels_test, pred_svc_inf_l1)
     print('Error of inf l1 svc on orig data= ', err_svc_inf_l1)
     # VaR-SVM on orig data
-    var_alpha = 0.16
+    var_alpha = 0.2
     cons = {'type': 'ineq', 'fun': lambda w_:
         -functions.var([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1])-1) for i in range(n)], var_alpha)}
     res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
@@ -175,7 +175,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     err_var_inf = 1 - accuracy_score(labels_test, pred_var_inf)
     print('Error of inf VaR svc on orig data= ', err_var_inf)
     # nu-SVM on orig data
-    cvar_alpha = 0.4
+    cvar_alpha = 0.5
     cons = {'type': 'ineq', 'fun': lambda w_:
     -functions.cvar(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), cvar_alpha)}
     res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
@@ -234,10 +234,10 @@ if __name__ == '__main__':
     classifier = SklearnClassifier(model=svc, clip_values=(0, 100))
 
     one_hot_labels = np.array(one_hot_labels)
-    classifier.fit(data, one_hot_labels)
+    classifier.fit(data, one_hot_labels[:n])
     attack = PoisoningAttackSVM(classifier=classifier, step=0.1, eps=0.1,
                                 x_train=data,
-                                y_train=one_hot_labels,
+                                y_train=one_hot_labels[:n],
                                 x_val=data_test,
                                 y_val=one_hot_labels[n:],
                                 max_iter=100)
@@ -249,6 +249,7 @@ if __name__ == '__main__':
     for p_i in poisoning_indices:
         h[p_i, :] = pois_data[i]-data[p_i]
         i += 1
+    h = h * 0.2 * np.linalg.norm(data) / np.linalg.norm(h)
     print('perturbation norm=', np.linalg.norm(h) / len(data))
 
     find_lambdas(data, labels, h, alphas, data_test, labels_test)
