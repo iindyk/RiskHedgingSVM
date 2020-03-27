@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
-import data
+import data as dt
 import functions
 from sklearn.metrics import accuracy_score
 from sklearn import svm
@@ -19,7 +19,8 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     _w0[-1] = _svc.intercept_[0]
     errs = []
     nit = 0
-    maxit = 6
+    maxit = 0
+    min_err = 1000
     while True:
         print('iteration #', nit)
         # calculate q with t=0
@@ -63,7 +64,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
                             for j in range(n)])/n for k in range(n_l)] for i in range(m)])
         cons = [{'type': 'eq', 'fun': lambda l: sum(l)-1}]
         for i in range(m):
-            cons.append({'type': 'eq', 'fun': lambda l: np.dot(l, a[i])})
+            cons.append({'type': 'eq', 'fun': lambda l: 100*np.dot(l, a[i])})
         bounds = [(0, 1)] * n_l
 
         res = minimize(lambda l: np.dot(l-lambdas, l-lambdas),
@@ -81,6 +82,9 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
         else:
             print('skipping the iteration, resetting lambdas')
             lambdas = np.ones(n_l) / n_l
+        if err < min_err:
+            min_err = err
+            best_lambdas = lambdas
         if err < 1e-3 or nit > maxit:
             break
     ##################
@@ -88,6 +92,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     #a = np.zeros((m, n_l))
     ################
     # plot errors, print lambdas
+    lambdas = best_lambdas
     plt.plot(np.arange(nit), errs)
     plt.xlabel('iteration #')
     plt.ylabel('l2 error')
@@ -96,6 +101,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
         cons_viol += abs(np.dot(lambdas, a[i]))
     print('constraint violation= ', cons_viol)
     print('lambdas: ', lambdas)
+    print('best lambdas: ', best_lambdas)
     print('errors: ', errs)
     # calculate params on original data
     cons = {'type': 'ineq', 'fun': lambda w_:
@@ -108,6 +114,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     print(res.message)
     w0 = res.x[:m]
     b0 = res.x[-1]
+    print(w0, b0)
     pred_orig = np.sign(np.array([np.dot(w0, data_test[i])+b0 for i in range(len(data_test))]))
     err_orig = 1 - accuracy_score(labels_test, pred_orig)
     print('Error of orig classifier on orig data= ', err_orig)
@@ -122,6 +129,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     print(res.message)
     w1 = res.x[:m]
     b1 = res.x[-1]
+    print(w1, b1)
     pred_inf = np.sign(np.array([np.dot(w1, data_test[i])+b1 for i in range(len(data_test))]))
     err_inf = 1 - accuracy_score(labels_test, pred_inf)
     print('Error of inf classifier on orig data= ', err_inf)
@@ -150,7 +158,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     err_svc_inf_l1 = 1 - accuracy_score(labels_test, pred_svc_inf_l1)
     print('Error of inf l1 svc on orig data= ', err_svc_inf_l1)
     # VaR-SVM on orig data
-    var_alpha = 0.2
+    var_alpha = 0.1
     cons = {'type': 'ineq', 'fun': lambda w_:
         -functions.var([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1])-1) for i in range(n)], var_alpha)}
     res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
@@ -175,7 +183,7 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
     err_var_inf = 1 - accuracy_score(labels_test, pred_var_inf)
     print('Error of inf VaR svc on orig data= ', err_var_inf)
     # nu-SVM on orig data
-    cvar_alpha = 0.5
+    cvar_alpha = 0.15
     cons = {'type': 'ineq', 'fun': lambda w_:
     -functions.cvar(np.array([(labels[i] * (np.dot(w_[:m], data[i]) + w_[-1]) - 1) for i in range(n)]), cvar_alpha)}
     res = minimize(lambda w_: np.dot(w_[:m], w_[:m]) / 2, _w0,
@@ -204,35 +212,59 @@ def find_lambdas(data, labels, h, alphas, data_test, labels_test):
 
 
 if __name__ == '__main__':
-    n = 300
-    m = 3
-    k = 4
-    pois_share = 0.4
-    alphas = [i/k for i in range(1, k+1)]
+    _n = 347
+    _m = 27
+    _k = 28
 
-    data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
-    #data, labels = data.get_diabetic_dataset()
+    alphas = [i/_k for i in range(1, _k+1)]
+    #alphas = [0.5, 0.25, 0.10, 0.05]
+
+    #data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+    _data, _labels = dt.get_parkinson_dataset()
     one_hot_labels = []
-    for l in labels:
-        if l == 1:
+    for _l in _labels:
+        if _l == 1:
             one_hot_labels.append(np.array([1, 0]))
         else:
             one_hot_labels.append(np.array([0, 1]))
-    data, data_test = data[:n], data[n:]
-    labels, labels_test = labels[:n], labels[n:]
-    print('data norm=', np.linalg.norm(data) / len(data))
+    indices = np.arange(3*_n-3)
+    np.random.shuffle(indices)
+    indices = indices[:_n]
+    data_tr, labels_tr = [], []
+    data_test, labels_test = [], []
+    for i in range(len(_labels)):
+        if i in indices:
+            data_tr.append(_data[i])
+            labels_tr.append(_labels[i])
+        else:
+            data_test.append(_data[i])
+            labels_test.append(_labels[i])
+
+    data_tr, labels_tr = np.array(data_tr), np.array(labels_tr)
+    data_test, labels_test = np.array(data_test), np.array(labels_test)
+
+    print('data norm=', np.linalg.norm(data_tr) / len(data_tr))
 
     # create h
-    #h = 20*np.ones((n, m)) / np.sqrt(m)
-    svc = svm.SVC(kernel='linear').fit(data, labels)
-    '''h = svc.coef_[0]
-    _h = np.ones((n, m))
+    #h = np.ones((n, m))
+    #h = h * 0.10 * np.linalg.norm(data) / np.linalg.norm(h)
+    '''svc = svm.SVC(kernel='linear').fit(data, labels)
+    pois_share = 0.10
+    h = svc.coef_[0]
+    _h = np.zeros((n, m))
+    _count = 0
     for i in range(n):
-        _h[i] = h
-    h = _h*0.1*np.linalg.norm(data)/np.linalg.norm(_h)
-    '''
-    classifier = SklearnClassifier(model=svc, clip_values=(0, 100))
+        if i in svc.support_:
+            _h[i] = h
+            _count += 1
+        if _count > int(pois_share*n):
+            break
+    h = _h*0.1*np.linalg.norm(data)/np.linalg.norm(_h)'''
+    h = -20 * np.ones((_n, _m)) / np.sqrt(_m)
 
+
+
+    '''classifier = SklearnClassifier(model=svc, clip_values=(0, 100))
     one_hot_labels = np.array(one_hot_labels)
     classifier.fit(data, one_hot_labels[:n])
     attack = PoisoningAttackSVM(classifier=classifier, step=0.1, eps=0.1,
@@ -248,8 +280,9 @@ if __name__ == '__main__':
     i = 0
     for p_i in poisoning_indices:
         h[p_i, :] = pois_data[i]-data[p_i]
-        i += 1
-    h = h * 0.2 * np.linalg.norm(data) / np.linalg.norm(h)
-    print('perturbation norm=', np.linalg.norm(h) / len(data))
+        i += 1'''
 
-    find_lambdas(data, labels, h, alphas, data_test, labels_test)
+    #h = h * 0.2 * np.linalg.norm(data) / np.linalg.norm(h)
+    print('perturbation norm=', np.linalg.norm(h) / len(data_tr))
+
+    find_lambdas(data_tr, labels_tr, h, alphas, data_test, labels_test)

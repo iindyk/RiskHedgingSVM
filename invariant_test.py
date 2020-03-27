@@ -8,20 +8,22 @@ from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from statsmodels import robust
 
-
+# 'artificial', 'diabetic_retinopathy', 'breast_cancer', 'parkinson_speech'
 data_name = 'artificial'
 read = False
 
 if not read:
     n = 100
-    m = 10
     a = -10
-    b_ = 10
+    b_ = 20
     n_bins = 50
     n_pois = 50
     n_sample = 20
-    data, labels = dt.get_toy_dataset(n, m, random_flips=0.05)
-    dist = 0.1 * np.linalg.norm(data) * n_pois / len(data)
+    data, labels = dt.get_toy_dataset(n, 10, random_flips=0.05)
+    #data, labels = dt.get_parkinson_dataset()
+    indices = np.random.randint(0, len(labels), n)
+    data, labels = data[indices], labels[indices]
+    dist = 0.5 * np.linalg.norm(data) * n_pois / len(data)
     # train svm
     svm_ = svm.SVC(kernel='linear').fit(data, labels)
     w = svm_.coef_[0]
@@ -62,13 +64,23 @@ if not read:
                                         y_train=one_hot_labels,
                                         x_val=data[:n_pois],
                                         y_val=one_hot_labels[:n_pois],
-                                        max_iter=100)
+                                        max_iter=10)
             pois_data = attack.generate(data[poisoning_indices, :], one_hot_labels[poisoning_indices, :])
+
+            # gradient attack
+            '''svm_ = svm.SVC(kernel='linear').fit(data[poisoning_indices, :], labels[poisoning_indices])
+            pois_shift = np.zeros_like(data[poisoning_indices, :])
+            for supp in svm_.support_:
+                pois_shift[supp] = svm_.coef_[0]
+            pois_shift = pois_shift*dist/np.linalg.norm(pois_shift)
+            pois_shift = pois_shift * 0.5 * np.linalg.norm(data) / np.linalg.norm(pois_shift)
+            pois_data = data[poisoning_indices, :] + pois_shift'''
+
             pois_labels = one_hot_labels[poisoning_indices, :]
             target_stream_sets[j].append(pois_data)
-            target_stream_labels[j].append(pois_labels)
+            target_stream_labels[j].append(labels[poisoning_indices])
             pois_x = np.array([(1 if pois_labels[i, 0] == 1 else -1) *
-                               (np.dot(pois_data[i], w)+b)/np.linalg.norm(w) for i in range(n_pois)])
+                               (np.dot(pois_data[i], w) + b) / np.linalg.norm(w) for i in range(n_pois)])
             target_sets[j].append(fn.get_histogram(pois_x, a, b_, n_bins)[0])
             target_labels[j].append(-1)
 
@@ -97,9 +109,13 @@ if not read:
         if j == 0:
             print('training data generated!')
     print('test data generated!')
+    data_detection_tr = np.array(data_detection_tr)
+    data_detection_te = np.array(data_detection_te)
+    labels_detection_tr = np.array(labels_detection_tr)
+    labels_detection_te = np.array(labels_detection_te)
     # save to pickle
-    obj = {'data_detection_tr': np.array(data_detection_tr), 'labels_detection_tr': np.array(labels_detection_tr),
-           'data_detection_te': np.array(data_detection_te), 'labels_detection_te': np.array(labels_detection_te),
+    obj = {'data_detection_tr': data_detection_tr, 'labels_detection_tr': labels_detection_tr,
+           'data_detection_te': data_detection_te, 'labels_detection_te': labels_detection_te,
            'data_stream_tr': data_stream_tr, 'labels_stream_tr': labels_stream_tr,
            'data_stream_te': data_stream_te, 'labels_stream_te': labels_stream_te}
     with open('invariant_data/' + data_name + '.pickle', 'wb') as f:
@@ -118,11 +134,15 @@ else:
     labels_stream_tr = obj['labels_stream_tr']
     data_stream_te = obj['data_stream_te']
     labels_stream_te = obj['labels_stream_te']
+    print('Data read!')
 
-num_pois = np.sum(data_detection_te == -1)
-num_benign = np.sum(data_detection_te == 1)
+num_pois = np.sum(labels_detection_te == -1)
+num_benign = np.sum(labels_detection_te == 1)
+print('number of poisoning batches= ', num_pois)
+print('number of benign batches= ', num_benign)
 # train SVM detection model
 svm_det = svm.SVC(kernel='linear').fit(data_detection_tr, labels_detection_tr)
+print('svm normal vector: ', svm_det.coef_[0])
 predictions = svm_det.predict(data_detection_te)
 det_fp = 0
 det_fn = 0
@@ -170,7 +190,7 @@ for i in range(p):
 directions = np.array(directions)
 data_by_class = {1: np.array([data[i, :] for i in range(n) if labels[i] == 1]),
                  -1: np.array([data[i, :] for i in range(n) if labels[i] == -1])}
-outl_test = np.zeros_like(labels_stream_te)
+outl_test = np.zeros_like(labels_detection_te)
 for data_batch, labels_batch, i in zip(data_stream_te, labels_stream_te, range(len(labels_stream_te))):
     # calculate outl for each point
     for j in range(len(labels_batch)):
@@ -181,11 +201,11 @@ for data_batch, labels_batch, i in zip(data_stream_te, labels_stream_te, range(l
             if sd > outl_meas:
                 outl_meas = sd
         outl_test[i] += outl_meas
-pred_pois = outl_test.argsort()[int(kappa*n):]
+pred_pois = outl_test.argsort()[int(kappa*len(labels_detection_te)):] #[::-1]
 
 sd_fp = 0
 sd_fn = 0
-for i in range(len(labels_detection_tr)):
+for i in range(len(labels_detection_te)):
     if labels_detection_te[i] == 1 and i in pred_pois:
         sd_fp += 1
     elif labels_detection_te[i] == -1 and not (i in pred_pois):
@@ -194,6 +214,32 @@ for i in range(len(labels_detection_tr)):
 print('SD detection false negative= ', sd_fn/num_pois, '; false positive= ', sd_fp/num_benign)
 
 # Cramer filtering
+cramer_crit_val = 10000
+cramer_fp = 0
+cramer_fn = 0
+for data_batch, labels_batch, i in zip(data_stream_te, labels_stream_te, range(len(labels_stream_te))):
+    # calculate statistic
+    stat = 0
+    batch_size = len(labels_batch)
+    data_batch_by_class = {1: np.array([data_batch[i, :] for i in range(batch_size) if labels_batch[i] == 1]),
+                     -1: np.array([data_batch[i, :] for i in range(batch_size) if labels_batch[i] == -1])}
+    for class_ in (1, -1):
+        for test_point in data_batch_by_class[class_]:
+            for train_point in data_by_class[class_]:
+                stat += np.linalg.norm(test_point-train_point)/(len(data_batch_by_class[class_])+len(data_by_class[class_]))
+            for test_point1 in data_batch_by_class[class_]:
+                stat -= np.linalg.norm(test_point-test_point1)/(2*len(data_batch_by_class[class_])**2)
+
+    #print(stat)
+    if stat > cramer_crit_val and labels_detection_te[i] == 1:
+        cramer_fp += 1
+    elif stat < cramer_crit_val and labels_detection_te[i] == -1:
+        cramer_fn += 1
+
+
+print('Cramer detection false negative= ', cramer_fn/num_pois, '; false positive= ', cramer_fp/num_benign)
+
+
 
 
 

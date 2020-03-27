@@ -62,6 +62,11 @@ Error of orig l2 svc on orig data=  0.26432291666666663
 Error of inf l2 svc on orig data=  0.45703125
 Error of orig l1 svc on orig data=  0.26822916666666663
 Error of inf l1 svc on orig data=  0.30078125
+
+[0.05002153 0.05000775 0.04998418 0.04996412 0.04993912 0.04993566
+ 0.04993861 0.04993783 0.04993501 0.04993871 0.04995238 0.04996689
+ 0.04996478 0.04999295 0.05003263 0.05005408 0.05007394 0.05008011
+ 0.05013124 0.05014847]
 -----------------------------------------
  n = 383
     m = 19
@@ -73,3 +78,459 @@ Error of inf l1 svc on orig data=  0.30078125
     # diabetic retinopathy
 
 --------------------------------------
+n = 300
+    m = 3
+    k = 4
+    pois_share = 0.05
+    alphas = [i/k for i in range(1, k+1)]
+
+    data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+
+lambdas:  [0.85472289 0.10125425 0.03064261 0.01338025]
+errors:  [0.11794718588588671, 0.17877459974133703, 0.324836623456701, 0.10324457345454731]
+Optimization terminated successfully.
+Error of orig classifier on orig data=  0.07166666666666666
+Optimization terminated successfully.
+Error of inf classifier on orig data=  0.07666666666666666
+Error of orig l2 svc on orig data=  0.05166666666666664
+Error of inf l2 svc on orig data=  0.07833333333333337
+Error of orig l1 svc on orig data=  0.06666666666666665
+Error of inf l1 svc on orig data=  0.06999999999999995
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.09333333333333338
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.1316666666666667
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.08166666666666667
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.08999999999999997
+-----------------------------------------------------------------------
+n = 300
+    m = 4
+    k = 5
+
+    alphas = [i/k for i in range(1, k+1)]
+    #alphas = [0.5, 0.25, 0.10, 0.05]
+
+    data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+    h = h * 0.10 * np.linalg.norm(data) / np.linalg.norm(h)
+
+
+lambdas:  [0.10161893 0.12497351 0.25784071 0.15997631 0.35559053]
+errors:  [0.07128302281939494, 0.9214313661145638, 0.9973286017431194]
+Optimization terminated successfully.
+Error of orig classifier on orig data=  0.08166666666666667
+Optimization terminated successfully.
+Error of inf classifier on orig data=  0.07666666666666666
+Error of orig l2 svc on orig data=  0.06666666666666665
+Error of inf l2 svc on orig data=  0.10166666666666668
+Error of orig l1 svc on orig data=  0.06666666666666665
+Error of inf l1 svc on orig data=  0.09666666666666668
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.07333333333333336
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.06666666666666665
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.09166666666666667
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.06499999999999995
+-------------------------------------------------------
+n = 300
+    m = 4
+    k = 5
+
+    alphas = [i/k for i in range(1, k+1)]
+    #alphas = [0.5, 0.25, 0.10, 0.05]
+
+    data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+
+    pois_share = 0.15
+    h = svc.coef_[0]
+    _h = np.zeros((n, m))
+    _count = 0
+    for i in range(n):
+        if i in svc.support_:
+            _h[i] = h
+            _count += 1
+        if _count > int(pois_share*n):
+            break
+    h = _h*0.2*np.linalg.norm(data)/np.linalg.norm(_h)
+
+
+lambdas:  [0.19681975 0.20083709 0.20003664 0.20051268 0.20179384]
+best lambdas:  [0.19681975 0.20083709 0.20003664 0.20051268 0.20179384]
+errors:  [0.0037811041888553055, 0.03484631047835152, 0.023258484888046577, 0.023860808326754506, 0.028477287996277884, 0.028431898803190532, 0.04144936214292563, 0.04379749777943039, 0.0483234139680618, 0.09441526746736768, 0.06132277930812231]
+Optimization terminated successfully.
+[0.51411834 0.56390966 0.46342651 0.41810638] -9.649056704119086
+Error of orig classifier on orig data=  0.08166666666666667
+Optimization terminated successfully.
+[1.36721722 1.52276151 1.11440318 0.95409442] -25.656030574940097
+Error of inf classifier on orig data=  0.10333333333333339
+Error of orig l2 svc on orig data=  0.06999999999999995
+Error of inf l2 svc on orig data=  0.10166666666666668
+Error of orig l1 svc on orig data=  0.08333333333333337
+Error of inf l1 svc on orig data=  0.17166666666666663
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.09666666666666668
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.07499999999999996
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.08833333333333337
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.10166666666666668
+-----------------------------------------------------------------
+n = 300
+    m = 4
+    k = 5
+
+    alphas = [i/k for i in range(1, k+1)]
+    #alphas = [0.5, 0.25, 0.10, 0.05]
+
+    data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+    svc = svm.SVC(kernel='linear').fit(data, labels)
+    pois_share = 0.10
+    h = svc.coef_[0]
+    _h = np.zeros((n, m))
+    _count = 0
+    for i in range(n):
+        if i in svc.support_:
+            _h[i] = h
+            _count += 1
+        if _count > int(pois_share*n):
+            break
+    h = _h*0.15*np.linalg.norm(data)/np.linalg.norm(_h)
+
+
+constraint violation=  0.0017944273166606729
+lambdas:  [0.09225481 0.18754677 0.23721547 0.19763305 0.28534991]
+best lambdas:  [0.09225481 0.18754677 0.23721547 0.19763305 0.28534991]
+errors:  [0.007952896083294752, 0.011709474330813978, 0.0050930624826176375, 0.010111732611904371, 0.020671917565804734, 0.005198441335383447, 0.018332509314698573, 0.008997427088772852, 0.01851727762302138, 0.009591419140464299, 0.008908962186032286, 0.012036677937749252, 0.002015267419985071, 0.008029962719631103, 0.012562331123923248, 0.004834420926171484, 0.0014384928804086095, 0.011800344719143627, 0.014490034036571682, 0.011152177808784802, 0.004756022966595323, 0.001636057368913707, 0.0037615742841819325, 0.004005290020109985, 0.026334830463972485, 0.009546662355484695, 0.0035949340952607565, 0.009386606010736242, 0.012895192580792816, 0.006409221450710163, 0.007935150726978061, 0.004584666739053769, 0.004600294917471139, 0.005581538803168091, 0.0053915902765604646, 0.009002414218683112, 0.005683805476330249, 0.002698136839337782, 0.030594630460828002, 0.016943856619218076, 0.012042485567928252, 0.007915801798155837, 0.0026878433977550603, 0.016997081237216476, 0.013029495189776126, 0.0007554351418579197]
+Optimization terminated successfully.
+[0.49735791 0.48928936 0.39413236 0.45660205] -9.006888446554727
+Error of orig classifier on orig data=  0.07499999999999996
+Optimization terminated successfully.
+[0.69597062 0.69460315 0.5311306  0.63421735] -12.786562532224707
+Error of inf classifier on orig data=  0.08999999999999997
+Error of orig l2 svc on orig data=  0.05666666666666664
+Error of inf l2 svc on orig data=  0.09166666666666667
+Error of orig l1 svc on orig data=  0.07666666666666666
+Error of inf l1 svc on orig data=  0.11333333333333329
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.05833333333333335
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.07166666666666666
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.08499999999999996
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.10333333333333339
+
+-----------------------------------------------------------
+
+n = 190
+    m = 30
+    k = 31
+
+    alphas = [i/(2*k) for i in range(1, k+1)]
+    data, labels = data.get_breast_cancer_dataset()
+    h = 30 * np.ones((n, m)) / np.sqrt(m)
+
+    best lambdas:  [0.02997094 0.02892874 0.03132081 0.0297107  0.03018306 0.02840305
+ 0.03153396 0.03127636 0.02902388 0.02997495 0.03041586 0.03141775
+ 0.03016451 0.03297908 0.03098841 0.03316512 0.03444275 0.03336534
+ 0.03424054 0.03463727 0.03387807 0.03105884 0.03355068 0.03442704
+ 0.03532781 0.03450968 0.03400221 0.03435011 0.03427872 0.0328079
+ 0.03566589]
+errors:  [0.01163554177027173, 0.01793918022565813, 0.02636369099836473]
+Optimization terminated successfully.
+[-2.63923761e-05 -9.19856843e-03 -3.33442305e-03  3.31676065e-02
+ -4.14711229e-05 -1.13184117e-04 -1.55045337e-04 -7.34590772e-05
+ -6.61167692e-05 -3.96109152e-05 -1.65973722e-04 -2.11966990e-04
+ -1.13791885e-03 -1.17866948e-02 -1.56935555e-06 -3.06583252e-05
+ -4.32118291e-05 -5.11712563e-06 -2.01669234e-05 -2.23019491e-06
+ -1.31409824e-03 -1.38847729e-02 -1.36031874e-02 -6.82827609e-02
+ -9.43659038e-05 -4.51453648e-04 -5.16269642e-04 -1.52859009e-04
+ -1.93270437e-04 -8.11696619e-05] 35.5206863324133
+Error of orig classifier on orig data=  0.08443271767810023
+Optimization terminated successfully.
+[-0.00036152 -0.0093947  -0.00367587  0.03331047 -0.00037377 -0.0004406
+ -0.00047654 -0.00039203 -0.00039544 -0.00035312 -0.00048054 -0.00050635
+ -0.00147981 -0.01183135 -0.00033208 -0.00034809 -0.00035519 -0.00032973
+ -0.00033098 -0.00033138 -0.00166989 -0.01402524 -0.01382509 -0.06753335
+ -0.00040796 -0.00077839 -0.00085086 -0.00047995 -0.00052993 -0.00040013] 35.519528654521906
+Error of inf classifier on orig data=  0.079155672823219
+Error of orig l2 svc on orig data=  0.0870712401055409
+Error of inf l2 svc on orig data=  0.079155672823219
+Error of orig l1 svc on orig data=  0.06596306068601587
+Error of inf l1 svc on orig data=  0.6965699208443272
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.2137203166226913
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.10554089709762537
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.1187335092348285
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.12401055408970973
+--------------------------------------------------------------------
+n = 190
+    m = 30
+    k = 31
+
+    alphas = [i/(2*k) for i in range(1, k+1)]
+    data, labels = data.get_breast_cancer_dataset()
+    h = -80 * np.ones((n, m)) / np.sqrt(m)
+
+    lambdas:  [0.02954461 0.03050432 0.02914616 0.02920798 0.02912963 0.02948952
+ 0.02851929 0.0301881  0.02964462 0.02967163 0.03227828 0.03245265
+ 0.03166857 0.03185653 0.0323494  0.03228316 0.0334429  0.03413522
+ 0.0333294  0.03437672 0.03292534 0.03362983 0.03401273 0.0340814
+ 0.03518591 0.03453589 0.03383726 0.03455713 0.03427709 0.03443068
+ 0.03530805]
+best lambdas:  [0.02954461 0.03050432 0.02914616 0.02920798 0.02912963 0.02948952
+ 0.02851929 0.0301881  0.02964462 0.02967163 0.03227828 0.03245265
+ 0.03166857 0.03185653 0.0323494  0.03228316 0.0334429  0.03413522
+ 0.0333294  0.03437672 0.03292534 0.03362983 0.03401273 0.0340814
+ 0.03518591 0.03453589 0.03383726 0.03455713 0.03427709 0.03443068
+ 0.03530805]
+errors:  [0.0117537270470378, 0.017023934595568214, 0.024200311585703356]
+Optimization terminated successfully.
+[-5.21649919e-05 -8.70113103e-03 -3.30475063e-03  3.21412382e-02
+ -4.10482820e-05 -9.77767397e-05 -1.38840368e-04 -5.12883128e-05
+ -4.40506870e-05 -8.46048632e-06 -1.26373756e-04 -1.93794339e-04
+ -1.05227986e-03 -1.09888762e-02 -9.04639010e-06 -1.94097878e-05
+ -2.00991856e-05 -1.46957196e-05 -5.44189907e-06 -5.81066401e-06
+ -1.31370306e-03 -1.32719246e-02 -1.32660858e-02 -6.75575608e-02
+ -7.53508879e-05 -4.17574468e-04 -4.81797737e-04 -1.45386152e-04
+ -1.82556657e-04 -6.87870253e-05] 35.520384162482905
+Error of orig classifier on orig data=  0.08443271767810023
+Optimization terminated successfully.
+[ 9.43265767e-04 -7.78243979e-03 -2.54517917e-03  3.22079466e-02
+  9.93483637e-04  9.29359168e-04  8.91177279e-04  9.67487022e-04
+  9.75794004e-04  1.00712346e-03  8.78907326e-04  8.42206159e-04
+ -5.70954258e-05 -1.00716045e-02  1.02727625e-03  1.00328084e-03
+  1.00757940e-03  1.02153299e-03  1.02451125e-03  1.03673773e-03
+ -3.36959612e-04 -1.23831017e-02 -1.26420823e-02 -6.91173233e-02
+  9.52207682e-04  6.19877088e-04  5.35587400e-04  8.94027387e-04
+  8.41303413e-04  9.71167221e-04] 35.52002453549447
+Error of inf classifier on orig data=  0.0949868073878628
+Error of orig l2 svc on orig data=  0.0870712401055409
+Error of inf l2 svc on orig data=  0.09234828496042213
+Error of orig l1 svc on orig data=  0.0633245382585752
+Error of inf l1 svc on orig data=  0.6965699208443272
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.079155672823219
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.1424802110817942
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.08443271767810023
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.38522427440633245
+----------------------------------------------------------
+_n = 300
+    _m = 3
+    _k = 4
+
+    alphas = [i/_k for i in range(1, _k+1)]
+    _data, _labels = dt.get_toy_dataset(_n*3, _m, random_flips=0.05)
+
+lambdas:  [0.07224128 0.26003403 0.24291298 0.4248117 ]
+best lambdas:  [0.07224128 0.26003403 0.24291298 0.4248117 ]
+errors:  [0.009998456373475031, 0.1969905042568862, 0.07270869630251085, 0.03778658880185786, 0.008193008441846072, 0.0062371477526219216, 0.0027304489476177476, 0.010203084466077325, 0.04849268597242935, 0.07010620419136261, 0.025564159762783065, 0.10901863077796303, 0.02533335504597411, 0.03987729615649427, 0.04621893818485816, 0.06498629153302231, 0.022254983034332997, 0.01942145467516152, 0.08272528856128235, 0.004236811577573384, 0.007906464242010131]
+Optimization terminated successfully.
+[0.46529937 0.41159888 0.3658304 ] -5.8744260272025555
+Error of orig classifier on orig data=  0.09833333333333338
+Optimization terminated successfully.
+[0.46491967 0.41198416 0.36588054] -6.587772828572017
+Error of inf classifier on orig data=  0.11499999999999999
+Error of orig l2 svc on orig data=  0.06333333333333335
+Error of inf l2 svc on orig data=  0.16333333333333333
+Error of orig l1 svc on orig data=  0.07333333333333336
+Error of inf l1 svc on orig data=  0.14
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.05833333333333335
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.16333333333333333
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.08499999999999996
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.14
+-----------------------------------------------------------------
+_n = 383
+    _m = 19
+    _k = 20
+
+    alphas = [1-i/(1.5*_k) for i in range(1, _k+1)]
+    _data, _labels = dt.get_diabetic_dataset()
+
+best lambdas:  [0.050467   0.0499606  0.05001011 0.05006366 0.05011526 0.04992931
+ 0.05002802 0.04986429 0.04988099 0.04996867 0.05000065 0.05002478
+ 0.05001939 0.05001677 0.05003272 0.04985165 0.05002594 0.0499231
+ 0.04996729 0.04984982]
+errors:  [0.0005753114669769178]
+Optimization terminated successfully.
+[-0.06149862  0.61008808 -3.25981119  0.54375649  1.41116683  1.21953571
+  0.39875842 -0.51963857 -0.14370036  0.11953714  0.22135289  0.68768164
+ -0.16784972 -0.48864472 -0.27975345 -0.1112167  -0.03534542  0.02616593
+  0.50014543] 14.426886340992256
+Error of orig classifier on orig data=  0.27734375
+Optimization terminated successfully.
+[-0.06479351  0.60692427 -3.25921274  0.54199837  1.41228374  1.21922866
+  0.39909784 -0.51987664 -0.14376546  0.11946257  0.22139455  0.68983161
+ -0.16863829 -0.49190056 -0.2820519  -0.11298117 -0.03835068  0.02465182
+  0.49824652] 11.458102029892997
+Error of inf classifier on orig data=  0.2890625
+Error of orig l2 svc on orig data=  0.2734375
+Error of inf l2 svc on orig data=  0.44140625
+Error of orig l1 svc on orig data=  0.28125
+Error of inf l1 svc on orig data=  0.34375
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.41536458333333337
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.4375
+Positive directional derivative for linesearch
+Error of orig nu svc on orig data=  0.27994791666666663
+Positive directional derivative for linesearch
+Error of inf nu svc on orig data=  0.54296875
+
+--------------------------------------------------------
+
+_n = 347
+    _m = 27
+    _k = 28
+
+    alphas = [i/_k for i in range(1, _k+1)]
+    #alphas = [0.5, 0.25, 0.10, 0.05]
+
+    #data, labels = data.get_toy_dataset(n*3, m, random_flips=0.05)
+    _data, _labels = dt.get_parkinson_dataset()
+    h = 60 * np.ones((_n, _m)) / np.sqrt(_m)
+
+    best lambdas:  [0.03659948 0.03664919 0.03645711 0.03622907 0.03617601 0.03602766
+ 0.03597946 0.0357208  0.0356424  0.03547177 0.03540217 0.03562693
+ 0.03557363 0.03523365 0.03551242 0.03535924 0.03528646 0.03541668
+ 0.03553411 0.03536518 0.03556743 0.03553939 0.03557953 0.03542353
+ 0.03567387 0.03554058 0.03571886 0.0356934 ]
+errors:  [0.0021966601179644, 0.002007365004727002, 0.001154551821081788]
+Optimization terminated successfully.
+[-4.29193720e-03 -7.17948358e-06 -1.83322512e-03 -3.78420921e-03
+ -5.54999385e-03 -1.30681439e-03 -3.61909834e-04 -2.47741147e-04
+  2.72234958e-03 -1.47732910e-02 -7.07444570e-04 -1.63825757e-04
+  3.28398564e-04 -2.48163648e-03 -1.67798548e-03  6.29141155e-03
+ -1.10132192e-02  1.85378879e-03  2.87374417e-03  1.62008141e-03
+ -3.80922866e-03 -1.09334685e-05 -1.39990728e-06  1.46981890e-02
+ -4.40464980e-03  7.75454111e-03 -1.83826592e-01] 0.325025435992472
+Error of orig classifier on orig data=  0.09379509379509376
+Optimization terminated successfully.
+[-4.35660345e-03 -3.37760251e-05 -1.88684659e-03 -3.85665228e-03
+ -5.59183182e-03 -1.30546390e-03 -4.15860385e-04 -2.31718561e-04
+  2.70410124e-03 -1.48470978e-02 -6.38987916e-04 -2.11553482e-04
+  3.02592703e-04 -2.56583994e-03 -1.74842051e-03  6.38008995e-03
+ -1.09404006e-02  1.83846792e-03  2.83591915e-03  1.64488136e-03
+ -3.81514368e-03 -3.49218112e-05 -3.33678264e-05  1.47782130e-02
+ -4.38867709e-03  7.73326413e-03 -1.83811574e-01] 2.6671642447514783
+Error of inf classifier on orig data=  0.2222222222222222
+Error of orig l2 svc on orig data=  0.0014430014430014682
+Error of inf l2 svc on orig data=  0.15440115440115443
+Error of orig l1 svc on orig data=  0.0014430014430014682
+Error of inf l1 svc on orig data=  0.49350649350649356
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.09090909090909094
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.21500721500721498
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.0014430014430014682
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.17460317460317465
+--------------------------------------------------------
+_n = 383
+    _m = 19
+    _k = 20
+
+    alphas = [1-i/(1.5*_k) for i in range(1, _k+1)]
+    h = 30 * np.ones((_n, _m)) / np.sqrt(_m)
+    _data, _labels = dt.get_diabetic_dataset()
+
+    lambdas:  [0.05001922 0.04998047 0.04995556 0.04991261 0.04986967 0.04986084
+ 0.04987006 0.04986381 0.04988073 0.04992097 0.04995678 0.04998309
+ 0.04999234 0.0500224  0.05006647 0.05008881 0.05013887 0.05015089
+ 0.05022192 0.05024446]
+best lambdas:  [0.05001922 0.04998047 0.04995556 0.04991261 0.04986967 0.04986084
+ 0.04987006 0.04986381 0.04988073 0.04992097 0.04995678 0.04998309
+ 0.04999234 0.0500224  0.05006647 0.05008881 0.05013887 0.05015089
+ 0.05022192 0.05024446]
+errors:  [0.000518363305954672]
+Optimization terminated successfully.
+[-7.63022872e-06  3.27047413e-01 -2.88082482e+00 -1.26206287e-01
+  1.30209053e+00  9.18316920e-01  9.78053957e-01 -1.94178720e-01
+ -5.34956531e-02  1.25165807e-01  1.83631503e-01 -3.48212500e-01
+ -4.21339279e-01 -2.79708482e-01 -1.32217464e-01 -5.42984964e-02
+ -1.15567812e-02  7.29717815e-03  2.08183396e-01] 9.668351482030692
+Error of orig classifier on orig data=  0.26953125
+Optimization terminated successfully.
+[ 1.26025449e-02  3.43269157e-01 -2.88209798e+00 -1.18387379e-01
+  1.30424572e+00  9.18982347e-01  9.69257218e-01 -1.93611698e-01
+ -5.35328922e-02  1.25083745e-01  1.83806138e-01 -3.52609291e-01
+ -4.16635995e-01 -2.69854756e-01 -1.19543782e-01 -4.60264548e-02
+  7.40155283e-04  1.99256399e-02  2.20557447e-01] 11.981604778905185
+Error of inf classifier on orig data=  0.27734375
+Error of orig l2 svc on orig data=  0.26432291666666663
+Error of inf l2 svc on orig data=  0.5
+Error of orig l1 svc on orig data=  0.25911458333333337
+Error of inf l1 svc on orig data=  0.32682291666666663
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.27734375
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.5091145833333333
+Positive directional derivative for linesearch
+Error of orig nu svc on orig data=  0.265625
+Positive directional derivative for linesearch
+Error of inf nu svc on orig data=  0.5338541666666667
+-------------------------------------------------------------
+_n = 347
+    _m = 27
+    _k = 28
+
+    alphas = [i/_k for i in range(1, _k+1)]
+    _data, _labels = dt.get_parkinson_dataset()
+    h = -20 * np.ones((_n, _m)) / np.sqrt(_m)
+
+lambdas:  [0.03596113 0.03507108 0.03522439 0.03623687 0.03594248 0.03521154
+ 0.03584657 0.03594892 0.036092   0.03542879 0.03539941 0.03570591
+ 0.03573843 0.03538225 0.03569333 0.03577379 0.03632802 0.03596115
+ 0.03616053 0.03580305 0.03545496 0.03533748 0.03598798 0.03555118
+ 0.03558715 0.03600788 0.03565907 0.03550467]
+best lambdas:  [0.03596113 0.03507108 0.03522439 0.03623687 0.03594248 0.03521154
+ 0.03584657 0.03594892 0.036092   0.03542879 0.03539941 0.03570591
+ 0.03573843 0.03538225 0.03569333 0.03577379 0.03632802 0.03596115
+ 0.03616053 0.03580305 0.03545496 0.03533748 0.03598798 0.03555118
+ 0.03558715 0.03600788 0.03565907 0.03550467]
+errors:  [0.0017052996114222483]
+Optimization terminated successfully.
+[-1.02122902e-02 -4.31613152e-07 -4.84585610e-03 -5.68610626e-03
+ -1.44578832e-02 -5.52629080e-03 -7.94707463e-04  4.22420286e-04
+  1.87062320e-03 -1.23094518e-02  1.38940326e-03  1.51915926e-04
+ -2.16833290e-04  1.03616632e-02  7.08065308e-03 -7.54374606e-03
+  1.00955436e-02  3.05781891e-03  1.76566380e-03  2.06840888e-03
+ -3.48794948e-03  8.49532376e-06 -6.40083035e-06  1.52363003e-02
+ -3.18681943e-03 -6.17007998e-03 -1.91445759e-01] 0.8569581957369685
+Error of orig classifier on orig data=  0.08946608946608947
+Optimization terminated successfully.
+[-1.01557616e-02 -3.29553447e-06 -4.81741122e-03 -5.68289081e-03
+ -1.44524611e-02 -5.50501563e-03 -7.97084224e-04  4.31925879e-04
+  1.82685309e-03 -1.22339484e-02  1.34471996e-03  1.38321005e-04
+ -2.23270333e-04  1.04650865e-02  7.09397897e-03 -7.55932409e-03
+  1.01182809e-02  3.06448197e-03  1.76390897e-03  2.08910653e-03
+ -3.50565574e-03 -1.33046719e-05 -4.46769274e-06  1.52151095e-02
+ -3.22045233e-03 -6.13418834e-03 -1.91449689e-01] 0.03756715049986122
+Error of inf classifier on orig data=  0.05627705627705626
+Error of orig l2 svc on orig data=  0.0014430014430014682
+Error of inf l2 svc on orig data=  0.49783549783549785
+Error of orig l1 svc on orig data=  0.0014430014430014682
+Error of inf l1 svc on orig data=  0.49783549783549785
+`xtol` termination condition is satisfied.
+Error of orig VaR svc on orig data=  0.07792207792207795
+`xtol` termination condition is satisfied.
+Error of inf VaR svc on orig data=  0.0014430014430014682
+Optimization terminated successfully.
+Error of orig nu svc on orig data=  0.0014430014430014682
+Optimization terminated successfully.
+Error of inf nu svc on orig data=  0.49783549783549785

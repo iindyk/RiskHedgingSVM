@@ -14,13 +14,15 @@ import pickle
 
 # returns a dataset of points from [0, 1]^m
 def get_toy_dataset(n, m, random_flips=0.1, horizontal=False):
-    dataset = np.random.uniform(-10, 10, (n, m))
+    a = -1
+    b = 1
+    dataset = np.random.uniform(a, b, (n, m))
     labels = []
     for i in range(n):
         if horizontal:
             labels.append(1.0 if dataset[i, 1]-dataset[i, 0] > 0 else -1.0)
         else:
-            labels.append(1.0 if sum(dataset[i, :]) > 0 else -1.0)
+            labels.append(1.0 if sum(dataset[i, :]) > m*(b+a)/2 else -1.0)
     labels = np.array(labels)
     # random attack
     for i in range(int(random_flips*n)):
@@ -32,7 +34,7 @@ def get_toy_dataset(n, m, random_flips=0.1, horizontal=False):
 
 
 def get_breast_cancer_dataset():
-    f = open("wdbc.data", "r")
+    f = open("/home/iindyk/PycharmProjects/RiskHedgingSVM/wdbc.data", "r")
     data = []
     labels = []
     for line in f:
@@ -52,11 +54,11 @@ def get_breast_cancer_dataset():
 
 
 def get_gait_freeze_dataset():
-    data_files = os.listdir("dataset_fog_release/")
+    data_files = os.listdir("/home/iindyk/PycharmProjects/RiskHedgingSVM/dataset_fog_release/")
     data = []
     labels = []
     for f_path in data_files:
-        f = open("dataset_fog_release/"+f_path, "r")
+        f = open("/home/iindyk/PycharmProjects/RiskHedgingSVM/dataset_fog_release/"+f_path, "r")
 
         for line in f:
             arr = line.split(' ')[1:]
@@ -77,7 +79,7 @@ def get_gait_freeze_dataset():
 
 
 def get_diabetic_dataset():
-    f = open("diabetic_retinopathy.arff", 'r')
+    f = open("/home/iindyk/PycharmProjects/RiskHedgingSVM/diabetic_retinopathy.arff", 'r')
     data = []
     labels = []
     for line in f:
@@ -99,7 +101,7 @@ def get_diabetic_dataset():
 
 
 def get_parkinson_dataset():
-    f = open("parkinson_dataset/train_data.txt", "r")
+    f = open("/home/iindyk/PycharmProjects/RiskHedgingSVM/parkinson_dataset/train_data.txt", "r")
     data = []
     labels = []
     for line in f:
@@ -119,7 +121,7 @@ def get_parkinson_dataset():
 
 
 def get_spectf_heart_dataset():
-    f = open("spectf_heart_dataset/SPECTF.train", "r")
+    f = open("/home/iindyk/PycharmProjects/RiskHedgingSVM/spectf_heart_dataset/SPECTF.train", "r")
     data = []
     labels = []
     for line in f:
