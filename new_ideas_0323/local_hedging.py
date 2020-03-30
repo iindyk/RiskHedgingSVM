@@ -5,6 +5,7 @@ import data
 import functions
 
 data, labels = data.get_diabetic_dataset()  # get_toy_dataset(100, 3)
+data, labels = data[:383], labels[:383]
 n, m = np.shape(data)
 k = 2
 alphas = [0.1, 0.05]
